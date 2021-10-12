@@ -1,0 +1,15 @@
+00=Null SAP
+02=Sublayer Management / Individual
+03=Sublayer Management / Group
+06=IP (DoD Internet Protocol)
+0e=PROWAY (IEC 955) Network Management, Maintenance and Installation
+42=BPDU (Bridge PDU/802.1 Spanning Tree)
+4e=MMS(Manufacturing Message Service) EIA-RS 511
+5e=ISI IP
+7e=X.25 PLP (ISO 8208)
+8e=PROWAY (IEC 955) Active Station List Maintenance
+aa=SNAP (Sub-Network Acccess Protocol / non-iEEE SAPs)
+e0=IPX (Novell NetWare)
+f4=LAN Management
+fe=ISO Network Layer Protocols
+ff=Global DSAP

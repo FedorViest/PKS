@@ -1,5 +1,6 @@
 import scapy.all as scapy
 from scapy.all import rdpcap
+import sys
 
 
 def print_frame_info(frame):
@@ -13,7 +14,7 @@ def print_frame_info(frame):
     ip_adresses = get_frame_type(frame)
     print()
     print_frame(frame)
-    print("\n\n")
+    print("\n")
     return ip_adresses
 
 
@@ -59,7 +60,6 @@ def print_frame(frame):
             continue
         if count % 16 == 0:
             print('  ', end='')
-    print()
     print()
 
 
@@ -208,7 +208,22 @@ def print_all(frames):
         print("No IPv4 protocols were found\n\n")
 
 
-pcap = rdpcap("./vzorky_pcap_na_analyzu/trace-26.pcap")
+def open_file(file, write):
+    if write == "y":
+        sys.stdout = file
+
+
+def reverse_file(write):
+    if write == "y":
+        sys.stdout = sys.__stdout__
+
+def menu():
+    print("y - to write output into file")
+    print("n - to write output into CLI")
+    print("all - to print every frame info")
+    print("exit - to terminate program")
+
+pcap = rdpcap("./vzorky_pcap_na_analyzu/eth-2.pcap")
 #pcap = rdpcap("trace-26.pcap")
 frames = []
 index = 0
@@ -216,12 +231,25 @@ for pkt in pcap:
     raw = scapy.raw(pkt)
     frames.append("".join(["{:02x}".format(x) for x in raw]))
 
+
+menu()
+write = input("[y/n] print to file: ")
+if write == "y":
+    file = open("Output.txt", "w")
+else:
+    file = None
 handler = str(input("Pick your option: "))
 while handler != "exit":
     if handler == "all":
+        open_file(file, write)
         print_all(frames)
+        reverse_file(write)
     elif handler == "exit":
+        if write == "y":
+            file.close()
         exit(0)
     else:
         print("Invalid input, please select again")
+    menu()
+    write = str(input("[y/n] print to file: "))
     handler = str(input("\nPick your option: "))

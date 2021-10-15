@@ -7,11 +7,12 @@ import sys
 Funkcia na sumarny vypis ramcov
 """
 
-def print_all(frames, handler, icmp, arp, http, https, telnet, ssh, ftp, flag):
+
+def print_all(frames, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, flag):
     ip_adresses = []
     for index in range(len(frames)):
         print("Frame number: %d" % (index + 1))
-        ip_adress = print_frame_info(frames[index], handler, icmp, arp, http, https, telnet, ssh, ftp, index, flag)
+        ip_adress = print_frame_info(frames[index], handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, index, flag)
         if ip_adress:
             ip_adresses.append(ip_adress[0])
     if ip_adresses:
@@ -36,7 +37,7 @@ def print_icmp(frames, icmp):
             if icmp[i] == index:
                 if i < 10 or i >= len(icmp) - 10:
                     print("Frame number: %d" % (index + 1))
-                    print_frame_info(frames[index], handler, icmp, arp, http, https, telnet, ssh, ftp, index, False)
+                    print_frame_info(frames[index], handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, index, False)
                 i += 1
                 if i > len(icmp) - 1:
                     break
@@ -44,10 +45,40 @@ def print_icmp(frames, icmp):
         for index in range(len(frames)):
             if icmp[i] == index:
                 print("Frame number: %d" % (index + 1))
-                print_frame_info(frames[index], handler, icmp, arp, http, https, telnet, ssh, ftp, index, False)
+                print_frame_info(frames[index], handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, index, False)
                 i += 1
                 if i > len(icmp) - 1:
                     break
+
+
+def print_tftp(frames, tftp):
+    comms = []
+    ports = []
+    temp = []
+    final = []
+    for index in range(len(tftp)):
+        if tftp[index][1] == 69 or tftp[index][2] == 69:
+            comms.append(tftp[index])
+    for comm in range(len(comms)):
+        if comms[comm][1] == 69:
+            ports.append(comms[comm][2])
+        elif comms[comm][2] == 69:
+            ports.append(comms[comm][1])
+    for port in range(len(ports)):
+        for index in range(len(tftp)):
+            if (tftp[index][1] == ports[port] or tftp[index][2] == ports[port]) and (comms[port][0] <= tftp[index][0]):
+                temp.append(tftp[index][0])
+        final.append(temp)
+        temp = []
+    if len(ports) == 0:
+        print("No TFTP communications found")
+    index = 1
+    for communication in final:
+        print("\t\t\t\tCommunication number: " + str(index) + "\n\n")
+        index += 1
+        for frame in communication:
+            print("Frame number: %d" % (frame + 1))
+            print_frame_info(frames[frame], handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, index, False)
 
 
 """
@@ -55,7 +86,7 @@ Funkcia na vypis informacii o ramci
 """
 
 
-def print_frame_info(frame, handler, icmp, arp, http, https, telnet, ssh, ftp, number, flag):
+def print_frame_info(frame, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, number, flag):
     # Vypise zdrojovu naformatovanu mac adresu
     print("Source mac adress:", get_source_mac(frame))
     # Vypise koncovu naformatovanu mac adresu
@@ -67,7 +98,7 @@ def print_frame_info(frame, handler, icmp, arp, http, https, telnet, ssh, ftp, n
     print("Frame length by pcap API: " + str(len(frame) / 2) + "\nFrame length distributed by medium: " + str(
         (frame_length + 4)))
     # Zavolanie funkcie na zistanie dalsic informacii o ramci
-    ip_adresses = get_frame_type(frame, handler, icmp, arp, http, https, telnet, ssh, ftp, number, flag)
+    ip_adresses = get_frame_type(frame, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, number, flag)
     print()
     # Vypis dat v ramci
     print_frame(frame)
@@ -210,17 +241,17 @@ Funkcia na zistenie typu ramca
 """
 
 
-def get_frame_type(frame, handler, icmp, arp, http, https, telnet, ssh, ftp, number, flag):
+def get_frame_type(frame, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, number, flag):
     size = int(frame[24:28], 16)
     ip_addresses = []
     if size > 1536:
         print("Ethernet II")
-        ip_addresses = get_ether_protocol(frame, "Ethernet II", handler, icmp, arp, http, https, telnet, ssh, ftp, number, flag)
+        ip_addresses = get_ether_protocol(frame, "Ethernet II", handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, number, flag)
     else:
         size = frame[28:30]
         if size == "aa":
             print("IEEE 802.3 LLC + SNAP")
-            get_ether_protocol(frame, "SNAP", handler, icmp, arp, http, https, telnet, ssh, ftp, number, flag)
+            get_ether_protocol(frame, "SNAP", handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, number, flag)
         # ak je raw, tak je IPX header
         elif size == "ff":
             print("\tIEEE 802.3 RAW" + "\n\t\tProtocol: IPX")
@@ -249,7 +280,7 @@ Funkcia na zistenie typu ramca, v ktorej sa taktiez zistuje vnoreny protokol a i
 """
 
 
-def get_ether_protocol(frame, type, handler, icmp, arp, http, https, telnet, ssh, ftp, number, flag):
+def get_ether_protocol(frame, type, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, number, flag):
     ip_addresses = []
     if type == "Ethernet II":
         dict = get_ethernet_protocol()
@@ -266,10 +297,10 @@ def get_ether_protocol(frame, type, handler, icmp, arp, http, https, telnet, ssh
                     ip_addresses.append(source_ip)
                     print("\t\tSource ip address: " + str(
                         source_ip) + "\n\t\tDestination ip address: " + str(dest_ip) + "\n\t\tProtocol: " + protocol)
+                    index = get_header_size(frame) + 28
                     if handler == "icmp" and protocol == "ICMP":
                         icmps = get_icmp_types()
                         icmp_keys = icmps.keys()
-                        index = get_header_size(frame) + 28
                         if flag:
                             icmp.append(number)
                         no_icmp = 1
@@ -280,8 +311,16 @@ def get_ether_protocol(frame, type, handler, icmp, arp, http, https, telnet, ssh
                                 break
                         if no_icmp:
                             print("\tUnknown ICMP type")
-                    #elif handler == "udp" and protocol == "UDP":
-
+                    elif handler == "tftp" and protocol == "UDP":
+                        comm = []
+                        src_port = tftp_source_port(frame, index)
+                        dst_port = tftp_dest_port(frame, index)
+                        if src_port or dst_port == 69:
+                            comm.extend((number, src_port, dst_port))
+                        print("\t\tSource port:", src_port)
+                        print("\t\tDestination port:", dst_port)
+                        if flag:
+                            tftp.append(comm)
                     break
                 elif dict[key] == "ARP (Address Resolution Protocol)":
                     break
@@ -301,8 +340,16 @@ Funkcia na zistenie velkosti hlavicky
 
 
 def get_header_size(frame):
-    size = int(frame[29]) * 4 * 2
+    size = int(frame[29], 16) * 4 * 2
     return size
+
+
+def tftp_source_port(frame, header):
+    return int(frame[header:header + 4], 16)
+
+
+def tftp_dest_port(frame, header):
+    return int(frame[header + 4:header + 8], 16)
 
 
 """
@@ -359,10 +406,10 @@ def menu():
     print("exit - to terminate program")
 
 
-def load(frames, handler, icmp, arp, http, https, telnet, ssh, ftp):
+def load(frames, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp):
     file = open("Output.txt", "w")
     open_file(file, "y")
-    print_all(frames, handler, icmp, arp, http, https, telnet, ssh, ftp, True)
+    print_all(frames, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, True)
     reverse_file("y")
     file.close()
 
@@ -383,6 +430,7 @@ https = []
 telnet = []
 ssh = []
 ftp = []
+tftp = []
 write = input("[y/n] print to file: ")
 handler = str(input("Pick your option: "))
 while handler != "exit":
@@ -393,12 +441,12 @@ while handler != "exit":
     if handler == "all":
         file = open("Output.txt", "w")
         open_file(file, write)
-        print_all(frames, handler, icmp, arp, http, https, telnet, ssh, ftp, True)
+        print_all(frames, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, True)
         reverse_file(write)
         file.close()
     elif handler == "icmp":
         icmp = []
-        load(frames, handler, icmp, arp, http, https, telnet, ssh, ftp)
+        load(frames, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("ICMP Communication\n\n")
@@ -406,7 +454,14 @@ while handler != "exit":
         reverse_file(write)
         file2.close()
     elif handler == "tftp":
-        continue
+        tftp = []
+        load(frames, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp)
+        file2 = open("Output.txt", "w")
+        open_file(file2, write)
+        print("TFTP Communication\n\n")
+        print_tftp(frames, tftp)
+        reverse_file(write)
+        file2.close()
     elif handler == "exit":
         if write == "y":
             file.close()

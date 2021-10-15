@@ -81,6 +81,87 @@ def print_tftp(frames, tftp):
             print_frame_info(frames[frame], handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, index, False)
 
 
+def print_arp(frames, arps):
+    comms = []
+    if len(arps) == 0:
+        print("No ARP communications found")
+    for arp in arps:
+        paired_arps = []
+        if arp[1] == "request":
+            if arp_request(arp, comms):
+                continue
+            else:
+                paired_arps.append(arp)
+                comms.append(paired_arps)
+        else:
+            if arp_reply(arp, comms):
+                continue
+            else:
+                paired_arps.append(arp)
+                paired_arps.append("end")
+                comms.append(paired_arps)
+    print(comms)
+    complete = []
+    incomplete = []
+    for com in comms:
+        if com[-1][-1] == "end":
+            complete.append(com)
+        else:
+            incomplete.append(com)
+    print(complete)
+    print(incomplete)
+    index = 1
+    if complete:
+        for com in complete:
+            print("\t\t\t\nComplete Communication number:", index)
+            print()
+            index += 1
+            if com[-1][-1] == "end" and len(com) >= 2:
+                for counter in range(len(com)):
+                    print("ARP-" + com[counter][1] + "\nSource ip address: " + com[counter][2] + "\tDestination ip address: "\
+                    + com[counter][3] + "\nSource mac: " + com[counter][4] + "\tDestination mac: " + com[counter][5])
+                    print("Frame number: ", str(com[counter][0] + 1))
+                    print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, index, False)
+    if incomplete:
+        index = 1
+        for com in incomplete:
+            print("\t\t\t\nIncomplete Communication number:", index)
+            print()
+            index += 1
+            if com[-1][-1] != "end":
+                for counter in range(len(com)):
+                    print("ARP-" + com[counter][1] + "\nSource ip address: " + com[counter][2] + "\tDestination ip address: "\
+                    + com[counter][3] + "\nSource mac: " + com[counter][4] + "\tDestination mac: " + com[counter][5])
+                    print("Frame number: ", str(com[counter][0] + 1))
+                    print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, http, https, telnet, ssh, ftp, index, False)
+
+
+def arp_request(arp, comms):
+    counter = 0
+    if comms:
+        for index in comms:
+            temp = []
+            if arp[2] == index[0][2] and arp[3] == index[0][3] and arp[4] == index[0][4] and arp[5] == index[0][5] and index[-1][-1] != "end":
+                temp.append(arp)
+                comms[counter].append(arp)
+                return 1
+            counter += 1
+    return 0
+
+
+def arp_reply(arp, comms):
+    counter = 0
+    if comms:
+        for index in comms:
+            temp = []
+            if arp[2] == index[0][3] and arp[3] == index[0][2] and arp[5] == index[0][4] and index[-1][-1] != "end":
+                temp.append(arp)
+                arp.append("end")
+                comms[counter].append(arp)
+                return 1
+            counter += 1
+    return 0
+
 """
 Funkcia na vypis informacii o ramci
 """
@@ -322,8 +403,9 @@ def get_ether_protocol(frame, type, handler, icmp, tftp, arp, http, https, telne
                         if flag:
                             tftp.append(comm)
                     break
-                elif dict[key] == "ARP (Address Resolution Protocol)":
-                    analyze_arp(frame)
+                elif handler == "arp" and dict[key] == "ARP (Address Resolution Protocol)":
+                    if flag:
+                        arp.append(analyze_arp(frame, number))
     elif type == "SNAP":
         dict = get_ethernet_protocol()
         keys = dict.keys()
@@ -352,9 +434,20 @@ def tftp_dest_port(frame, header):
     return int(frame[header + 4:header + 8], 16)
 
 
-def analyze_arp(frame):
+def analyze_arp(frame, number):
+    arp_info = []
     type = int(frame[40:44], 16)
-    print("Type: ", type)
+    if type == 1:
+        type = "request"
+    elif type == 2:
+        type = "reply"
+    source_ip = format_ip(frame[56:64])
+    source_mac = format_mac(frame[44:56])
+    dest_ip = format_ip(frame[76:84])
+    dest_mac = format_mac(frame[64:76])
+    arp_info.extend((number, type, source_ip, dest_ip, source_mac, dest_mac))
+
+    return arp_info
 
 
 """
@@ -404,11 +497,13 @@ def reverse_file(write):
 
 
 def menu():
-    print("y - to write output into file")
-    print("n - to write output into CLI")
-    print("all - to print every frame info")
-    print("icmp - to print all icmp communications")
-    print("exit - to terminate program")
+    print("\n\n\ty - to write output into file")
+    print("\tn - to write output onto CLI")
+    print("\tall - to print every frame info")
+    print("\ticmp - to print all icmp communications")
+    print("\ttftp - to print all tftp communications")
+    print("\tarp - to print all arp communications")
+    print("\texit - to terminate program\n\n")
 
 
 def load(frames, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp):
@@ -465,6 +560,15 @@ while handler != "exit":
         open_file(file2, write)
         print("TFTP Communication\n\n")
         print_tftp(frames, tftp)
+        reverse_file(write)
+        file2.close()
+    elif handler == "arp":
+        arp = []
+        load(frames, handler, icmp, tftp, arp, http, https, telnet, ssh, ftp)
+        file2 = open("Output.txt", "w")
+        open_file(file2, write)
+        print("ARP Communication\n\n")
+        print_arp(frames, arp)
         reverse_file(write)
         file2.close()
     elif handler == "exit":

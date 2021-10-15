@@ -323,7 +323,7 @@ def get_ether_protocol(frame, type, handler, icmp, tftp, arp, http, https, telne
                             tftp.append(comm)
                     break
                 elif dict[key] == "ARP (Address Resolution Protocol)":
-                    break
+                    analyze_arp(frame)
     elif type == "SNAP":
         dict = get_ethernet_protocol()
         keys = dict.keys()
@@ -350,6 +350,11 @@ def tftp_source_port(frame, header):
 
 def tftp_dest_port(frame, header):
     return int(frame[header + 4:header + 8], 16)
+
+
+def analyze_arp(frame):
+    type = int(frame[40:44], 16)
+    print("Type: ", type)
 
 
 """

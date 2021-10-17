@@ -621,6 +621,12 @@ def menu():
     print("\ticmp - to print all icmp communications")
     print("\ttftp - to print all tftp communications")
     print("\tarp - to print all arp communications")
+    print("\thttp - to print http communications")
+    print("\thttps - to print https communications")
+    print("\tssh - to print ssh communications")
+    print("\ttelnet - to print telnet communications")
+    print("\tftp-data - to print ftp-data communications")
+    print("\tftp-control - to print ftp-control communications")
     print("\texit - to terminate program\n\n")
 
 

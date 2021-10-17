@@ -1,114 +1,499 @@
-ARP Communication
+SSH Communication
 
 
-[[[0, 'request', '192.168.1.33', '192.168.1.1', '00:14:38:06:e0:93', '00:00:00:00:00:00'], [1, 'reply', '192.168.1.1', '192.168.1.33', '00:02:cf:ab:a2:4c', '00:14:38:06:e0:93', 'end']], [[1025, 'request', '192.168.1.33', '192.168.1.1', '00:14:38:06:e0:93', '00:00:00:00:00:00'], [1026, 'reply', '192.168.1.1', '192.168.1.33', '00:02:cf:ab:a2:4c', '00:14:38:06:e0:93', 'end']], [[1028, 'request', '192.168.1.1', '192.168.1.33', '00:02:cf:ab:a2:4c', '00:00:00:00:00:00'], [1029, 'reply', '192.168.1.33', '192.168.1.1', '00:14:38:06:e0:93', '00:02:cf:ab:a2:4c', 'end']]]
-[[[0, 'request', '192.168.1.33', '192.168.1.1', '00:14:38:06:e0:93', '00:00:00:00:00:00'], [1, 'reply', '192.168.1.1', '192.168.1.33', '00:02:cf:ab:a2:4c', '00:14:38:06:e0:93', 'end']], [[1025, 'request', '192.168.1.33', '192.168.1.1', '00:14:38:06:e0:93', '00:00:00:00:00:00'], [1026, 'reply', '192.168.1.1', '192.168.1.33', '00:02:cf:ab:a2:4c', '00:14:38:06:e0:93', 'end']], [[1028, 'request', '192.168.1.1', '192.168.1.33', '00:02:cf:ab:a2:4c', '00:00:00:00:00:00'], [1029, 'reply', '192.168.1.33', '192.168.1.1', '00:14:38:06:e0:93', '00:02:cf:ab:a2:4c', 'end']]]
-[]
-			
-Complete Communication number: 1
+					Complete SSH communication:
 
-ARP-request
-Source ip address: 192.168.1.33	Destination ip address: 192.168.1.1
-Source mac: 00:14:38:06:e0:93	Destination mac: 00:00:00:00:00:00
+Source port: 38273	Destination port: 22
 Frame number:  1
-Source mac adress: 00:14:38:06:e0:93
-Destination mac adress: ff:ff:ff:ff:ff:ff
-Frame length by pcap API: 42.0
-Frame length distributed by medium: 64
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 74.0
+Frame length distributed by medium: 78.0
 Ethernet II
-	ARP (Address Resolution Protocol)
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
 
-ff ff ff ff ff ff 00 14   38 06 e0 93 08 06 00 01 
-08 00 06 04 00 01 00 14   38 06 e0 93 c0 a8 01 21 
-00 00 00 00 00 00 c0 a8   01 01 
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 00 
+00 3c 73 3b 40 00 40 06   aa 2d 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   4e a2 00 00 00 00 a0 02 
+16 d0 7f 47 00 00 02 04   05 b4 04 02 08 0a 02 7a 
+3d 99 00 00 00 00 01 03   03 07 
 
 
-ARP-reply
-Source ip address: 192.168.1.1	Destination ip address: 192.168.1.33
-Source mac: 00:02:cf:ab:a2:4c	Destination mac: 00:14:38:06:e0:93
+Source port: 22	Destination port: 38273
 Frame number:  2
-Source mac adress: 00:02:cf:ab:a2:4c
-Destination mac adress: 00:14:38:06:e0:93
-Frame length by pcap API: 60.0
-Frame length distributed by medium: 64.0
+Source mac adress: 00:04:96:27:c8:3a
+Destination mac adress: 00:15:17:24:cd:65
+Frame length by pcap API: 74.0
+Frame length distributed by medium: 78.0
 Ethernet II
-	ARP (Address Resolution Protocol)
+	Internet IP (IPv4)
+		Source ip address: 10.40.5.2
+		Destination ip address: 10.40.4.2
+		Protocol: TCP
 
-00 14 38 06 e0 93 00 02   cf ab a2 4c 08 06 00 01 
-08 00 06 04 00 02 00 02   cf ab a2 4c c0 a8 01 01 
-00 14 38 06 e0 93 c0 a8   01 21 00 00 00 00 00 00 
-00 00 00 00 00 00 00 00   00 00 00 00 
+00 15 17 24 cd 65 00 04   96 27 c8 3a 08 00 45 00 
+00 3c 00 00 40 00 3f 06   1e 69 0a 28 05 02 0a 28 
+04 02 00 16 95 81 67 20   59 90 70 48 4e a3 a0 12 
+16 a0 dc d5 00 00 02 04   05 b4 04 02 08 0a 00 15 
+e1 cf 02 7a 3d 99 01 03   03 02 
 
 
-			
-Complete Communication number: 2
-
-ARP-request
-Source ip address: 192.168.1.33	Destination ip address: 192.168.1.1
-Source mac: 00:14:38:06:e0:93	Destination mac: 00:00:00:00:00:00
-Frame number:  1026
-Source mac adress: 00:14:38:06:e0:93
-Destination mac adress: ff:ff:ff:ff:ff:ff
-Frame length by pcap API: 42.0
-Frame length distributed by medium: 64
+Source port: 38273	Destination port: 22
+Frame number:  3
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
 Ethernet II
-	ARP (Address Resolution Protocol)
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
 
-ff ff ff ff ff ff 00 14   38 06 e0 93 08 06 00 01 
-08 00 06 04 00 01 00 14   38 06 e0 93 c0 a8 01 21 
-00 00 00 00 00 00 c0 a8   01 01 
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 00 
+00 34 73 3c 40 00 40 06   aa 34 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   4e a3 67 20 59 91 80 10 
+00 2e 22 0f 00 00 01 01   08 0a 02 7a 3d 99 00 15 
+e1 cf 
 
 
-ARP-reply
-Source ip address: 192.168.1.1	Destination ip address: 192.168.1.33
-Source mac: 00:02:cf:ab:a2:4c	Destination mac: 00:14:38:06:e0:93
-Frame number:  1027
-Source mac adress: 00:02:cf:ab:a2:4c
-Destination mac adress: 00:14:38:06:e0:93
-Frame length by pcap API: 60.0
-Frame length distributed by medium: 64.0
+Source port: 22	Destination port: 38273
+Frame number:  4
+Source mac adress: 00:04:96:27:c8:3a
+Destination mac adress: 00:15:17:24:cd:65
+Frame length by pcap API: 87.0
+Frame length distributed by medium: 91.0
 Ethernet II
-	ARP (Address Resolution Protocol)
+	Internet IP (IPv4)
+		Source ip address: 10.40.5.2
+		Destination ip address: 10.40.4.2
+		Protocol: TCP
 
-00 14 38 06 e0 93 00 02   cf ab a2 4c 08 06 00 01 
-08 00 06 04 00 02 00 02   cf ab a2 4c c0 a8 01 01 
-00 14 38 06 e0 93 c0 a8   01 21 00 00 00 00 00 00 
-00 00 00 00 00 00 00 00   00 00 00 00 
+00 15 17 24 cd 65 00 04   96 27 c8 3a 08 00 45 00 
+00 49 b8 5e 40 00 3f 06   65 fd 0a 28 05 02 0a 28 
+04 02 00 16 95 81 67 20   59 91 70 48 4e a3 80 18 
+05 a8 1f d7 00 00 01 01   08 0a 00 15 e1 d1 02 7a 
+3d 99 53 53 48 2d 31 2e   39 39 2d 4f 70 65 6e 53 
+53 48 5f 34 2e 32 0a 
 
 
-			
-Complete Communication number: 3
-
-ARP-request
-Source ip address: 192.168.1.1	Destination ip address: 192.168.1.33
-Source mac: 00:02:cf:ab:a2:4c	Destination mac: 00:00:00:00:00:00
-Frame number:  1029
-Source mac adress: 00:02:cf:ab:a2:4c
-Destination mac adress: ff:ff:ff:ff:ff:ff
-Frame length by pcap API: 60.0
-Frame length distributed by medium: 64.0
+Source port: 38273	Destination port: 22
+Frame number:  5
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
 Ethernet II
-	ARP (Address Resolution Protocol)
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
 
-ff ff ff ff ff ff 00 02   cf ab a2 4c 08 06 00 01 
-08 00 06 04 00 01 00 02   cf ab a2 4c c0 a8 01 01 
-00 00 00 00 00 00 c0 a8   01 21 00 00 00 00 00 00 
-00 00 00 00 00 00 00 00   00 00 00 00 
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 00 
+00 34 73 3d 40 00 40 06   aa 33 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   4e a3 67 20 59 a6 80 10 
+00 2e 21 f6 00 00 01 01   08 0a 02 7a 3d 9b 00 15 
+e1 d1 
 
 
-ARP-reply
-Source ip address: 192.168.1.33	Destination ip address: 192.168.1.1
-Source mac: 00:14:38:06:e0:93	Destination mac: 00:02:cf:ab:a2:4c
-Frame number:  1030
-Source mac adress: 00:14:38:06:e0:93
-Destination mac adress: 00:02:cf:ab:a2:4c
-Frame length by pcap API: 42.0
-Frame length distributed by medium: 64
+Source port: 38273	Destination port: 22
+Frame number:  6
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 86.0
+Frame length distributed by medium: 90.0
 Ethernet II
-	ARP (Address Resolution Protocol)
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
 
-00 02 cf ab a2 4c 00 14   38 06 e0 93 08 06 00 01 
-08 00 06 04 00 02 00 14   38 06 e0 93 c0 a8 01 21 
-00 02 cf ab a2 4c c0 a8   01 01 
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 00 
+00 48 73 3e 40 00 40 06   aa 1e 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   4e a3 67 20 59 a6 80 18 
+00 2e 68 34 00 00 01 01   08 0a 02 7a 3d 9b 00 15 
+e1 d1 53 53 48 2d 32 2e   30 2d 4f 70 65 6e 53 53 
+48 5f 34 2e 37 0a 
+
+
+Source port: 22	Destination port: 38273
+Frame number:  7
+Source mac adress: 00:04:96:27:c8:3a
+Destination mac adress: 00:15:17:24:cd:65
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.5.2
+		Destination ip address: 10.40.4.2
+		Protocol: TCP
+
+00 15 17 24 cd 65 00 04   96 27 c8 3a 08 00 45 00 
+00 34 b8 5f 40 00 3f 06   66 11 0a 28 05 02 0a 28 
+04 02 00 16 95 81 67 20   59 a6 70 48 4e b7 80 10 
+05 a8 1c 68 00 00 01 01   08 0a 00 15 e1 d1 02 7a 
+3d 9b 
+
+
+Source port: 38273	Destination port: 22
+Frame number:  8
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 858.0
+Frame length distributed by medium: 862.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
+
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 00 
+03 4c 73 3f 40 00 40 06   a7 19 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   4e b7 67 20 59 a6 80 18 
+00 2e 24 4f 00 00 01 01   08 0a 02 7a 3d 9b 00 15 
+e1 d1 00 00 03 14 08 14   9e 71 5c 29 58 8b 0d 08 
+74 9c 9a 40 92 ff 0a 5b   00 00 00 7e 64 69 66 66 
+69 65 2d 68 65 6c 6c 6d   61 6e 2d 67 72 6f 75 70 
+2d 65 78 63 68 61 6e 67   65 2d 73 68 61 32 35 36 
+2c 64 69 66 66 69 65 2d   68 65 6c 6c 6d 61 6e 2d 
+67 72 6f 75 70 2d 65 78   63 68 61 6e 67 65 2d 73 
+68 61 31 2c 64 69 66 66   69 65 2d 68 65 6c 6c 6d 
+61 6e 2d 67 72 6f 75 70   31 34 2d 73 68 61 31 2c 
+64 69 66 66 69 65 2d 68   65 6c 6c 6d 61 6e 2d 67 
+72 6f 75 70 31 2d 73 68   61 31 00 00 00 0f 73 73 
+68 2d 72 73 61 2c 73 73   68 2d 64 73 73 00 00 00 
+9d 61 65 73 31 32 38 2d   63 62 63 2c 33 64 65 73 
+2d 63 62 63 2c 62 6c 6f   77 66 69 73 68 2d 63 62 
+63 2c 63 61 73 74 31 32   38 2d 63 62 63 2c 61 72 
+63 66 6f 75 72 31 32 38   2c 61 72 63 66 6f 75 72 
+32 35 36 2c 61 72 63 66   6f 75 72 2c 61 65 73 31 
+39 32 2d 63 62 63 2c 61   65 73 32 35 36 2d 63 62 
+63 2c 72 69 6a 6e 64 61   65 6c 2d 63 62 63 40 6c 
+79 73 61 74 6f 72 2e 6c   69 75 2e 73 65 2c 61 65 
+73 31 32 38 2d 63 74 72   2c 61 65 73 31 39 32 2d 
+63 74 72 2c 61 65 73 32   35 36 2d 63 74 72 00 00 
+00 9d 61 65 73 31 32 38   2d 63 62 63 2c 33 64 65 
+73 2d 63 62 63 2c 62 6c   6f 77 66 69 73 68 2d 63 
+62 63 2c 63 61 73 74 31   32 38 2d 63 62 63 2c 61 
+72 63 66 6f 75 72 31 32   38 2c 61 72 63 66 6f 75 
+72 32 35 36 2c 61 72 63   66 6f 75 72 2c 61 65 73 
+31 39 32 2d 63 62 63 2c   61 65 73 32 35 36 2d 63 
+62 63 2c 72 69 6a 6e 64   61 65 6c 2d 63 62 63 40 
+6c 79 73 61 74 6f 72 2e   6c 69 75 2e 73 65 2c 61 
+65 73 31 32 38 2d 63 74   72 2c 61 65 73 31 39 32 
+2d 63 74 72 2c 61 65 73   32 35 36 2d 63 74 72 00 
+00 00 69 68 6d 61 63 2d   6d 64 35 2c 68 6d 61 63 
+2d 73 68 61 31 2c 75 6d   61 63 2d 36 34 40 6f 70 
+65 6e 73 73 68 2e 63 6f   6d 2c 68 6d 61 63 2d 72 
+69 70 65 6d 64 31 36 30   2c 68 6d 61 63 2d 72 69 
+70 65 6d 64 31 36 30 40   6f 70 65 6e 73 73 68 2e 
+63 6f 6d 2c 68 6d 61 63   2d 73 68 61 31 2d 39 36 
+2c 68 6d 61 63 2d 6d 64   35 2d 39 36 00 00 00 69 
+68 6d 61 63 2d 6d 64 35   2c 68 6d 61 63 2d 73 68 
+61 31 2c 75 6d 61 63 2d   36 34 40 6f 70 65 6e 73 
+73 68 2e 63 6f 6d 2c 68   6d 61 63 2d 72 69 70 65 
+6d 64 31 36 30 2c 68 6d   61 63 2d 72 69 70 65 6d 
+64 31 36 30 40 6f 70 65   6e 73 73 68 2e 63 6f 6d 
+2c 68 6d 61 63 2d 73 68   61 31 2d 39 36 2c 68 6d 
+61 63 2d 6d 64 35 2d 39   36 00 00 00 1a 6e 6f 6e 
+65 2c 7a 6c 69 62 40 6f   70 65 6e 73 73 68 2e 63 
+6f 6d 2c 7a 6c 69 62 00   00 00 1a 6e 6f 6e 65 2c 
+7a 6c 69 62 40 6f 70 65   6e 73 73 68 2e 63 6f 6d 
+2c 7a 6c 69 62 00 00 00   00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00   00 00 
+
+
+Source port: 22	Destination port: 38273
+Frame number:  9
+Source mac adress: 00:04:96:27:c8:3a
+Destination mac adress: 00:15:17:24:cd:65
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.5.2
+		Destination ip address: 10.40.4.2
+		Protocol: TCP
+
+00 15 17 24 cd 65 00 04   96 27 c8 3a 08 00 45 00 
+00 34 b8 60 40 00 3f 06   66 10 0a 28 05 02 0a 28 
+04 02 00 16 95 81 67 20   59 a6 70 48 51 cf 80 10 
+07 34 17 c4 00 00 01 01   08 0a 00 15 e1 d1 02 7a 
+3d 9b 
+
+
+Source port: 22	Destination port: 38273
+Frame number:  10
+Source mac adress: 00:04:96:27:c8:3a
+Destination mac adress: 00:15:17:24:cd:65
+Frame length by pcap API: 770.0
+Frame length distributed by medium: 774.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.5.2
+		Destination ip address: 10.40.4.2
+		Protocol: TCP
+
+00 15 17 24 cd 65 00 04   96 27 c8 3a 08 00 45 00 
+02 f4 b8 61 40 00 3f 06   63 4f 0a 28 05 02 0a 28 
+04 02 00 16 95 81 67 20   59 a6 70 48 51 cf 80 18 
+07 34 bd ce 00 00 01 01   08 0a 00 15 e1 d1 02 7a 
+3d 9b 00 00 02 bc 07 14   b9 ff 0b c7 c3 82 0e b3 
+93 b7 b1 11 d7 5b 42 98   00 00 00 59 64 69 66 66 
+69 65 2d 68 65 6c 6c 6d   61 6e 2d 67 72 6f 75 70 
+2d 65 78 63 68 61 6e 67   65 2d 73 68 61 31 2c 64 
+69 66 66 69 65 2d 68 65   6c 6c 6d 61 6e 2d 67 72 
+6f 75 70 31 34 2d 73 68   61 31 2c 64 69 66 66 69 
+65 2d 68 65 6c 6c 6d 61   6e 2d 67 72 6f 75 70 31 
+2d 73 68 61 31 00 00 00   0f 73 73 68 2d 72 73 61 
+2c 73 73 68 2d 64 73 73   00 00 00 9d 61 65 73 31 
+32 38 2d 63 62 63 2c 33   64 65 73 2d 63 62 63 2c 
+62 6c 6f 77 66 69 73 68   2d 63 62 63 2c 63 61 73 
+74 31 32 38 2d 63 62 63   2c 61 72 63 66 6f 75 72 
+31 32 38 2c 61 72 63 66   6f 75 72 32 35 36 2c 61 
+72 63 66 6f 75 72 2c 61   65 73 31 39 32 2d 63 62 
+63 2c 61 65 73 32 35 36   2d 63 62 63 2c 72 69 6a 
+6e 64 61 65 6c 2d 63 62   63 40 6c 79 73 61 74 6f 
+72 2e 6c 69 75 2e 73 65   2c 61 65 73 31 32 38 2d 
+63 74 72 2c 61 65 73 31   39 32 2d 63 74 72 2c 61 
+65 73 32 35 36 2d 63 74   72 00 00 00 9d 61 65 73 
+31 32 38 2d 63 62 63 2c   33 64 65 73 2d 63 62 63 
+2c 62 6c 6f 77 66 69 73   68 2d 63 62 63 2c 63 61 
+73 74 31 32 38 2d 63 62   63 2c 61 72 63 66 6f 75 
+72 31 32 38 2c 61 72 63   66 6f 75 72 32 35 36 2c 
+61 72 63 66 6f 75 72 2c   61 65 73 31 39 32 2d 63 
+62 63 2c 61 65 73 32 35   36 2d 63 62 63 2c 72 69 
+6a 6e 64 61 65 6c 2d 63   62 63 40 6c 79 73 61 74 
+6f 72 2e 6c 69 75 2e 73   65 2c 61 65 73 31 32 38 
+2d 63 74 72 2c 61 65 73   31 39 32 2d 63 74 72 2c 
+61 65 73 32 35 36 2d 63   74 72 00 00 00 55 68 6d 
+61 63 2d 6d 64 35 2c 68   6d 61 63 2d 73 68 61 31 
+2c 68 6d 61 63 2d 72 69   70 65 6d 64 31 36 30 2c 
+68 6d 61 63 2d 72 69 70   65 6d 64 31 36 30 40 6f 
+70 65 6e 73 73 68 2e 63   6f 6d 2c 68 6d 61 63 2d 
+73 68 61 31 2d 39 36 2c   68 6d 61 63 2d 6d 64 35 
+2d 39 36 00 00 00 55 68   6d 61 63 2d 6d 64 35 2c 
+68 6d 61 63 2d 73 68 61   31 2c 68 6d 61 63 2d 72 
+69 70 65 6d 64 31 36 30   2c 68 6d 61 63 2d 72 69 
+70 65 6d 64 31 36 30 40   6f 70 65 6e 73 73 68 2e 
+63 6f 6d 2c 68 6d 61 63   2d 73 68 61 31 2d 39 36 
+2c 68 6d 61 63 2d 6d 64   35 2d 39 36 00 00 00 15 
+6e 6f 6e 65 2c 7a 6c 69   62 40 6f 70 65 6e 73 73 
+68 2e 63 6f 6d 00 00 00   15 6e 6f 6e 65 2c 7a 6c 
+69 62 40 6f 70 65 6e 73   73 68 2e 63 6f 6d 00 00 
+00 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00 
+00 00 
+
+
+Source port: 22	Destination port: 38273
+Frame number:  233
+Source mac adress: 00:04:96:27:c8:3a
+Destination mac adress: 00:15:17:24:cd:65
+Frame length by pcap API: 114.0
+Frame length distributed by medium: 118.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.5.2
+		Destination ip address: 10.40.4.2
+		Protocol: TCP
+
+00 15 17 24 cd 65 00 04   96 27 c8 3a 08 00 45 10 
+00 64 b8 8b 40 00 3f 06   65 a5 0a 28 05 02 0a 28 
+04 02 00 16 95 81 67 20   67 1e 70 48 59 b7 80 18 
+0a 4c 61 c2 00 00 01 01   08 0a 00 16 05 0f 02 7a 
+60 da 3e 0f ab c2 18 e6   27 be 65 b2 c6 92 84 0d 
+c5 d5 ee 6f 61 bf d5 3f   1f f9 8d 75 5e 31 ef 6b 
+fa 70 52 48 72 ed 18 b0   54 af 4f 47 9f dd b1 48 
+c8 46 
+
+
+Source port: 38273	Destination port: 22
+Frame number:  234
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
+
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 10 
+00 34 73 7c 40 00 40 06   a9 e4 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   59 b7 67 20 67 4e 80 10 
+00 70 c2 7a 00 00 01 01   08 0a 02 7a 60 da 00 16 
+05 0f 
+
+
+Source port: 22	Destination port: 38273
+Frame number:  235
+Source mac adress: 00:04:96:27:c8:3a
+Destination mac adress: 00:15:17:24:cd:65
+Frame length by pcap API: 114.0
+Frame length distributed by medium: 118.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.5.2
+		Destination ip address: 10.40.4.2
+		Protocol: TCP
+
+00 15 17 24 cd 65 00 04   96 27 c8 3a 08 00 45 10 
+00 64 b8 8c 40 00 3f 06   65 a4 0a 28 05 02 0a 28 
+04 02 00 16 95 81 67 20   67 4e 70 48 59 b7 80 18 
+0a 4c 2b fe 00 00 01 01   08 0a 00 16 05 0f 02 7a 
+60 da b7 42 76 0c 33 86   f6 b8 93 07 cc b7 2e 76 
+96 84 bd 8a d6 6a 2a d7   4d 07 17 ec aa 11 7f fe 
+96 74 aa 11 ae c0 f4 a0   d4 80 de 82 4e 69 32 22 
+aa d8 
+
+
+Source port: 38273	Destination port: 22
+Frame number:  236
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
+
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 10 
+00 34 73 7d 40 00 40 06   a9 e3 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   59 b7 67 20 67 7e 80 10 
+00 70 c2 4a 00 00 01 01   08 0a 02 7a 60 da 00 16 
+05 0f 
+
+
+Source port: 22	Destination port: 38273
+Frame number:  237
+Source mac adress: 00:04:96:27:c8:3a
+Destination mac adress: 00:15:17:24:cd:65
+Frame length by pcap API: 194.0
+Frame length distributed by medium: 198.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.5.2
+		Destination ip address: 10.40.4.2
+		Protocol: TCP
+
+00 15 17 24 cd 65 00 04   96 27 c8 3a 08 00 45 10 
+00 b4 b8 8d 40 00 3f 06   65 53 0a 28 05 02 0a 28 
+04 02 00 16 95 81 67 20   67 7e 70 48 59 b7 80 18 
+0a 4c 8a e0 00 00 01 01   08 0a 00 16 05 0f 02 7a 
+60 da ed db a4 8c 6e 26   1c 43 66 49 28 2a 41 e4 
+4f 36 42 4a 15 1f f4 e3   b4 8c 40 03 4a 63 eb 48 
+0c 0f e6 06 95 85 b3 e5   09 ea 38 5e d2 9d b6 ec 
+60 0c 73 0e 35 44 c2 9e   84 ed 83 2b 2c eb 76 16 
+b5 ff 21 14 bd 38 83 94   42 5c 3b c5 9e 22 67 7e 
+9b 08 0b 64 92 55 6d 99   60 67 aa ba 18 d6 2c 10 
+bc 49 77 61 48 39 80 9b   cf 74 59 9f 8e f7 a9 48 
+4c c4 7e 99 d1 79 e9 65   5f 72 fd 94 81 ca e5 be 
+c2 05 
+
+
+Source port: 38273	Destination port: 22
+Frame number:  238
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
+
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 10 
+00 34 73 7e 40 00 40 06   a9 e2 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   59 b7 67 20 67 fe 80 10 
+00 7b c1 bf 00 00 01 01   08 0a 02 7a 60 da 00 16 
+05 0f 
+
+
+Source port: 38273	Destination port: 22
+Frame number:  239
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 98.0
+Frame length distributed by medium: 102.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
+
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 10 
+00 54 73 7f 40 00 40 06   a9 c1 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   59 b7 67 20 67 fe 80 18 
+00 7b 77 43 00 00 01 01   08 0a 02 7a 60 de 00 16 
+05 0f ec 06 74 6a 84 8a   e2 f8 cd e6 5e d7 a8 e0 
+65 17 c0 fc a9 4e 60 16   2e 13 07 72 72 22 e7 5d 
+ee 3d 
+
+
+Source port: 38273	Destination port: 22
+Frame number:  240
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
+
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 10 
+00 34 73 80 40 00 40 06   a9 e0 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   59 d7 67 20 67 fe 80 11 
+00 7b c1 9a 00 00 01 01   08 0a 02 7a 60 de 00 16 
+05 0f 
+
+
+Source port: 22	Destination port: 38273
+Frame number:  241
+Source mac adress: 00:04:96:27:c8:3a
+Destination mac adress: 00:15:17:24:cd:65
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.5.2
+		Destination ip address: 10.40.4.2
+		Protocol: TCP
+
+00 15 17 24 cd 65 00 04   96 27 c8 3a 08 00 45 10 
+00 34 b8 8e 40 00 3f 06   65 d2 0a 28 05 02 0a 28 
+04 02 00 16 95 81 67 20   67 fe 70 48 59 d8 80 11 
+0a 4c b7 c4 00 00 01 01   08 0a 00 16 05 13 02 7a 
+60 de 
+
+
+Source port: 38273	Destination port: 22
+Frame number:  242
+Source mac adress: 00:15:17:24:cd:65
+Destination mac adress: 00:04:96:27:c8:3a
+Frame length by pcap API: 66.0
+Frame length distributed by medium: 70.0
+Ethernet II
+	Internet IP (IPv4)
+		Source ip address: 10.40.4.2
+		Destination ip address: 10.40.5.2
+		Protocol: TCP
+
+00 04 96 27 c8 3a 00 15   17 24 cd 65 08 00 45 10 
+00 34 73 81 40 00 40 06   a9 df 0a 28 04 02 0a 28 
+05 02 95 81 00 16 70 48   59 d8 67 20 67 ff 80 10 
+00 7b c1 95 00 00 01 01   08 0a 02 7a 60 de 00 16 
+05 13 
+
+
+					No incomplete SSH communication
 
 

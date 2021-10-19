@@ -15,6 +15,6 @@
 143=imap
 179=bgp
 389=Idap
-443=https (ssl)
+443=https
 445=microsoft-ds
 1080=socks

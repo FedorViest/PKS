@@ -32,23 +32,14 @@ def print_icmp(frames, icmp):
     if len(icmp) == 0:
         print("No ICMP protocols were found\n\n")
         return
-    if len(icmp) > 20:
-        for index in range(len(frames)):
-            if icmp[i] == index:
-                if i < 10 or i >= len(icmp) - 10:
-                    print("Frame number: %d" % (index + 1))
-                    print_frame_info(frames[index], handler, icmp, tftp, arp, tcps, index, False)
-                i += 1
-                if i > len(icmp) - 1:
-                    break
-    else:
-        for index in range(len(frames)):
-            if icmp[i] == index:
+    for index in range(len(frames)):
+        if icmp[i] == index:
+            if i < 10 or i >= len(icmp) - 10:
                 print("Frame number: %d" % (index + 1))
                 print_frame_info(frames[index], handler, icmp, tftp, arp, tcps, index, False)
-                i += 1
-                if i > len(icmp) - 1:
-                    break
+            i += 1
+            if i > len(icmp) - 1:
+                break
 
 
 def print_tftp(frames, tftp):
@@ -73,12 +64,15 @@ def print_tftp(frames, tftp):
     if len(ports) == 0:
         print("No TFTP communications found")
     index = 1
+    counter = 0
     for communication in final:
         print("\t\t\t\tCommunication number: " + str(index) + "\n\n")
         index += 1
         for frame in communication:
-            print("Frame number: %d" % (frame + 1))
-            print_frame_info(frames[frame], handler, icmp, tftp, arp, tcps, index, False)
+            if counter < 10 and counter >= len(communication) - 10:
+                print("Frame number: %d" % (frame + 1))
+                print_frame_info(frames[frame], handler, icmp, tftp, arp, tcps, index, False)
+            counter += 1
 
 
 def print_arp(frames, arps):
@@ -100,7 +94,6 @@ def print_arp(frames, arps):
                 paired_arps.append(arp)
                 paired_arps.append("end")
                 comms.append(paired_arps)
-    print(comms)
     complete = []
     incomplete = []
     for com in comms:
@@ -108,8 +101,6 @@ def print_arp(frames, arps):
             complete.append(com)
         else:
             incomplete.append(com)
-    print(complete)
-    print(incomplete)
     index = 1
     if complete:
         for com in complete:
@@ -118,22 +109,29 @@ def print_arp(frames, arps):
             index += 1
             if com[-1][-1] == "end" and len(com) >= 2:
                 for counter in range(len(com)):
-                    print("ARP-" + com[counter][1] + "\nSource ip address: " + com[counter][2] + "\tDestination ip address: "\
-                    + com[counter][3] + "\nSource mac: " + com[counter][4] + "\tDestination mac: " + com[counter][5])
-                    print("Frame number: ", str(com[counter][0] + 1))
-                    print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, tcps, index, False)
+                    if 10 > counter >= len(com) - 10:
+                        print("ARP-" + com[counter][1] + "\nSource ip address: " + com[counter][2] + "\tDestination ip address: "\
+                        + com[counter][3] + "\nSource mac: " + com[counter][4] + "\tDestination mac: " + com[counter][5])
+                        print("Frame number: ", str(com[counter][0] + 1))
+                        print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, tcps, index, False)
     if incomplete:
         index = 1
         for com in incomplete:
             print("\t\t\t\nIncomplete Communication number:", index)
             print()
             index += 1
-            if com[-1][-1] != "end":
+            if com[-1][-1] != "end" and com[-1] != "end":
                 for counter in range(len(com)):
-                    print("ARP-" + com[counter][1] + "\nSource ip address: " + com[counter][2] + "\tDestination ip address: "\
-                    + com[counter][3] + "\nSource mac: " + com[counter][4] + "\tDestination mac: " + com[counter][5])
-                    print("Frame number: ", str(com[counter][0] + 1))
-                    print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, tcps, index, False)
+                    if 10 > counter >= len(com) - 10:
+                        print("ARP-" + com[counter][1] + "\nSource ip address: " + com[counter][2] + "\tDestination ip address: "\
+                        + com[counter][3] + "\nSource mac: " + com[counter][4] + "\tDestination mac: " + com[counter][5])
+                        print("Frame number: ", str(com[counter][0] + 1))
+                        print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, tcps, index, False)
+            elif com[-1] == "end":
+                print("ARP-" + com[0][1] + "\nSource ip address: " + com[0][2] + "\tDestination ip address: "\
+                + com[0][3] + "\nSource mac: " + com[0][4] + "\tDestination mac: " + com[0][5])
+                print("Frame number: ", str(com[0][0] + 1))
+                print_frame_info(frames[com[0][0]], handler, icmp, tftp, arp, tcps, index, False)
 
 
 def arp_request(arp, comms):
@@ -163,11 +161,11 @@ def arp_reply(arp, comms):
     return 0
 
 
-def handle_tcp(frame, tcps, number, src_ip, dest_ip):
+def handle_tcp(frame, tcps, number, src_ip, dest_ip, print_ports):
     header = get_header_size(frame) + 28
     source_port = int(frame[header:header + 4], 16)
     dest_port = int(frame[header + 4:header + 8], 16)
-    tcp_types = load_TCP_type(frame)
+    tcp_types = load_TCP_type()
     keys = tcp_types.keys()
     type = ""
     tcp_info = []
@@ -182,6 +180,12 @@ def handle_tcp(frame, tcps, number, src_ip, dest_ip):
     if type:
         tcp_info.extend((number, flag, source_port, dest_port, src_ip, dest_ip, type))
         tcps.append(tcp_info)
+    if print_ports:
+        if type:
+            print("\t\t\t" + str(type).upper())
+        else:
+            print("\t\t\tUnknown source and destination ports")
+        print("\t\t\tSource port: " + str(source_port) + "\n\t\t\tDestination port:" + str(dest_port))
 
 
 def tcp_communication(frames, tcps, type):
@@ -193,7 +197,6 @@ def tcp_communication(frames, tcps, type):
         else:
             temp.append(tcp)
             comms.append(temp)
-
     printing_complete = True
     printing_incomplete = True
     for com in comms:
@@ -207,11 +210,26 @@ def tcp_communication(frames, tcps, type):
             if first[1] == "1" and second[1] == "1" and second[4] == "1" and third[4] == "1":
                 corr_start = True
             if corr_start:
-                if com[len(com) - 3][1][0] == "1" and com[len(com) - 2][1][0] == "1" and com[len(com) - 2][1][4] == "1" and com[len(com) - 1][1][4] == "1":
-                    corr_end = True
-                elif com[len(com) - 4][1][0] == "1" and com[len(com) - 3][1][4] == "1" and com[len(com) - 2][1][0] == "1" and com[len(com) - 1][1][4] == "1":
-                    corr_end = True
-                elif com[len(com) - 1][1][2] == "1":
+                fin = False
+                fin_ack = False
+                ack = False
+                for com_n in range(len(com)):
+                    if com[com_n][1][0] == "1" and not fin:
+                        fin = True
+                        continue
+                    elif com[com_n][1][0] == "1" and com[com_n][1][4] == "1" and fin and not fin_ack:
+                        fin_ack = True
+                        continue
+                    elif com[com_n][1][4] == "1" and fin and fin_ack:
+                        ack = True
+                        continue
+                    elif com[com_n][1][2] == "1":
+                        corr_end = True
+                        break
+                    elif fin and fin_ack and ack:
+                        corr_end = True
+                        break
+                if fin and fin_ack and ack:
                     corr_end = True
 
         if printing_complete:
@@ -224,21 +242,23 @@ def tcp_communication(frames, tcps, type):
                         print("Frame number: ", str(int(i[0]) + 1))
                         print_frame_info(frames[i[0]], handler, icmp, tftp, arp, tcps, index, False)
                     counter += 1
-            else:
-                print("\t\t\t\t\tNo complete " + type.upper() + " communication\n\n")
-            printing_complete = False
+                printing_complete = False
 
         if printing_incomplete:
-            if corr_start and not corr_end or not corr_start:
+            if corr_start and not corr_end:
                 print("\t\t\t\t\tInomplete " + type.upper() + " communication:\n")
+                counter = 0
                 for i in com:
-                    print("Source port: " + str(i[2]) + "\tDestination port: " + str(i[3]))
-                    print("Frame number: ", str(int(i[0]) + 1))
-                    print_frame_info(frames[i[0]], handler, icmp, tftp, arp, tcps, index, False)
-            else:
-                print("\t\t\t\t\tNo incomplete " + type.upper() + " communication\n\n")
-            printing_incomplete = False
-
+                    if counter < 10 or counter >= len(com) - 10:
+                        print("Source port: " + str(i[2]) + "\tDestination port: " + str(i[3]))
+                        print("Frame number: ", str(int(i[0]) + 1))
+                        print_frame_info(frames[i[0]], handler, icmp, tftp, arp, tcps, index, False)
+                    counter += 1
+                printing_incomplete = False
+    if printing_complete:
+        print("\t\t\t\t\tNo complete " + type.upper() + " communication\n\n")
+    if printing_incomplete:
+        print("\t\t\t\t\tNo incomplete " + type.upper() + " communication\n\n")
 
 
 def group_comms(tcp, comms):
@@ -246,26 +266,13 @@ def group_comms(tcp, comms):
     if comms:
         for com in comms:
             temp = []
-            if tcp[6] == com[0][6] and (tcp[2] == com[0][2] and tcp[3] == com[0][3] and tcp[4] == com[0][4] and tcp[5] == com[0][5])\
+            if tcp[6] == com[0][6] and (tcp[2] == com[0][2] and tcp[3] == com[0][3] and tcp[4] == com[0][4] and tcp[5] == com[0][5]) \
                 or (tcp[2] == com[0][3] and tcp[3] == com[0][2] and tcp[4] == com[0][5] and tcp[5] == com[0][4]):
                 temp.append(tcp)
                 comms[counter].append(tcp)
                 return 1
             counter += 1
     return 0
-
-
-def append_start(comms, tcp):
-    if comms:
-        for index in range(len(comms)):
-            temp = []
-            if tcp[1][1] == "1" and tcp[1][4] == "1":
-                tcp.append("SYN+ACK")
-                temp.append(tcp)
-                comms.append(tcp)
-    else:
-        tcp.append("SYN")
-        comms.append(tcp)
 
 
 """
@@ -378,6 +385,16 @@ def get_802_protocol():
     return type802
 
 
+def load_udp_type():
+    type = {}
+    with open("UDP.txt") as file:
+        lines = file.readlines()
+        for line in lines:
+            temp = line.split("=")
+            type[temp[0]] = temp[1][0:-1]
+    return type
+
+
 """
 Funkcia, ktora nacita IPv4 protokoly do slovnika
 """
@@ -393,7 +410,7 @@ def get_ip_protocol():
     return protocol
 
 
-def load_TCP_type(frame):
+def load_TCP_type():
     type = {}
     with open("TCP.txt") as file:
         lines = file.readlines()
@@ -508,19 +525,30 @@ def get_ether_protocol(frame, type, handler, icmp, tftp, arp, tcps, number, flag
                                 break
                         if no_icmp:
                             print("\tUnknown ICMP type")
-                    elif handler == "tftp" and protocol == "UDP":
-                        comm = []
+                    elif protocol == "UDP":
                         src_port = tftp_source_port(frame, index)
                         dst_port = tftp_dest_port(frame, index)
-                        if src_port or dst_port == 69:
-                            comm.extend((number, src_port, dst_port))
+                        udp_type = load_udp_type()
+                        udp_keys = udp_type.keys()
+                        udp = ""
+                        for udp_key in udp_keys:
+                            if udp_key == str(src_port) or udp_key == str(dst_port):
+                                udp = udp_type[udp_key]
+                                print("\t\t" + udp.upper())
+                        if not udp:
+                            print("\t\tUnknown protocol")
                         print("\t\tSource port:", src_port)
                         print("\t\tDestination port:", dst_port)
-                        if flag:
-                            tftp.append(comm)
-                    #break
+                        if handler == "tftp":
+                            comm = []
+                            comm.extend((number, src_port, dst_port))
+                            if flag:
+                                tftp.append(comm)
                     elif protocol == "TCP":
-                        handle_tcp(frame, tcps, number, source_ip, dest_ip)
+                        if handler == "all":
+                            handle_tcp(frame, tcps, number, source_ip, dest_ip, True)
+                        else:
+                            handle_tcp(frame, tcps, number, source_ip, dest_ip, False)
                 elif handler == "arp" and dict[key] == "ARP (Address Resolution Protocol)":
                     if flag:
                         arp.append(analyze_arp(frame, number))
@@ -752,5 +780,5 @@ while handler != "exit":
     else:
         print("Invalid input, please select again")
     menu()
-    write = str(input("[y/n] print to file: "))
-    handler = str(input("\nPick your option: "))
+    write = str(input("\n[y/n] print to file: "))
+    handler = str(input("Pick your option: "))

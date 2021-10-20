@@ -23,6 +23,51 @@ def print_all(frames, handler, icmp, tftp, arp, tcps, flag):
 
 
 """
+Funkcia na vypisanie ramca v hexadecimalnom formate
+"""
+
+
+def print_frame(frame):
+    count = 0
+    for i in frame:
+        print(i, end='')
+        count += 1
+        if count % 2 == 0:
+            print(" ", end='')
+        if count % 32 == 0:
+            print()
+            continue
+        if count % 16 == 0:
+            print('  ', end='')
+    print()
+
+
+"""
+Funkcia na vypis informacii o ramci
+"""
+
+
+def print_frame_info(frame, handler, icmp, tftp, arp, tcps, number, flag):
+    # Vypise zdrojovu naformatovanu mac adresu
+    print("Source mac adress:", get_source_mac(frame))
+    # Vypise koncovu naformatovanu mac adresu
+    print("Destination mac adress:", get_dest_mac(frame))
+    frame_length = len(frame) / 2
+    if frame_length < 60:
+        frame_length = 60
+    # Vypis dlzky ramca
+    print("Frame length by pcap API: " + str(len(frame) / 2) + "\nFrame length distributed by medium: " + str(
+        (frame_length + 4)))
+    # Zavolanie funkcie na zistanie dalsic informacii o ramci
+    ip_adresses = get_frame_type(frame, handler, icmp, tftp, arp, tcps, number, flag)
+    print()
+    # Vypis dat v ramci
+    print_frame(frame)
+    print("\n")
+    return ip_adresses
+
+
+"""
 Funkcia na vypis ICMP typov pre bod 4
 """
 
@@ -42,14 +87,21 @@ def print_icmp(frames, icmp):
                 break
 
 
+"""
+Funkcia na vypis TFTP komunikacie
+"""
+
+
 def print_tftp(frames, tftp):
     comms = []
     ports = []
     temp = []
     final = []
+    # Tu si pridavam do listu zaciatky komunikacii
     for index in range(len(tftp)):
         if tftp[index][1] == 69 or tftp[index][2] == 69:
             comms.append(tftp[index])
+    # V ramcoch pozeram na dalsi port po 69 a pridavam ho do listu portov, podla coho viem urcit, ze ide o jednu komunikaciu
     for comm in range(len(comms)):
         if comms[comm][1] == 69:
             ports.append(comms[comm][2])
@@ -75,10 +127,19 @@ def print_tftp(frames, tftp):
             counter += 1
 
 
+"""
+Funkcia na zoskupenie ARP komunikacii a nasledne vypisanie
+Do funkice posielam vsetky nacitane ramce a vsetky ARP v poli
+"""
+
+
 def print_arp(frames, arps):
     comms = []
     if len(arps) == 0:
         print("No ARP communications found")
+    # V cykle prechadzam ARP komunikacie a kontrolujem ci uz mam zapisanu komunikaciu s rovnakymi parametrami,
+    # ak nie, pridavam ju ako novy index v liste. Nakoniec kazdej ukoncenej komunikacie pridavam 'end', aby som vedel
+    # ci uz je komunikacia ukoncena
     for arp in arps:
         paired_arps = []
         if arp[1] == "request":
@@ -139,6 +200,7 @@ def arp_request(arp, comms):
     if comms:
         for index in comms:
             temp = []
+            #Kontrola ip adries, mac adries a ci komunikacia nie je ukoncena
             if arp[2] == index[0][2] and arp[3] == index[0][3] and arp[4] == index[0][4] and arp[5] == index[0][5] and index[-1][-1] != "end":
                 temp.append(arp)
                 comms[counter].append(arp)
@@ -161,7 +223,29 @@ def arp_reply(arp, comms):
     return 0
 
 
+def analyze_arp(frame, number):
+    arp_info = []
+    type = int(frame[40:44], 16)
+    if type == 1:
+        type = "request"
+    elif type == 2:
+        type = "reply"
+    source_ip = format_ip(frame[56:64])
+    source_mac = format_mac(frame[44:56])
+    dest_ip = format_ip(frame[76:84])
+    dest_mac = format_mac(frame[64:76])
+    arp_info.extend((number, type, source_ip, dest_ip, source_mac, dest_mac))
+    print(arp_info)
+    return arp_info
+
+
+"""
+Funkcia na zistenie informacii o TCP komunikaciach
+"""
+
+
 def handle_tcp(frame, tcps, number, src_ip, dest_ip, print_ports):
+    #Zistim si porty, typy TCP a flag, ktore potom posielam ako parametre do funkcie
     header = get_header_size(frame) + 28
     source_port = int(frame[header:header + 4], 16)
     dest_port = int(frame[header + 4:header + 8], 16)
@@ -188,6 +272,11 @@ def handle_tcp(frame, tcps, number, src_ip, dest_ip, print_ports):
         print("\t\t\tSource port: " + str(source_port) + "\n\t\t\tDestination port:" + str(dest_port))
 
 
+"""
+Funkcia na kontrolovanie, ci su komunikacie kompletne alebo nekompletne a nasledny vypis tychto komunikacii
+"""
+
+
 def tcp_communication(frames, tcps, type):
     comms = []
     for tcp in tcps:
@@ -207,12 +296,14 @@ def tcp_communication(frames, tcps, type):
             first = com[0][1]
             second = com[1][1]
             third = com[2][1]
+            #Kontrola, ci je komunikacia spravne otvorena
             if first[1] == "1" and second[1] == "1" and second[4] == "1" and third[4] == "1":
                 corr_start = True
             if corr_start:
                 fin = False
                 fin_ack = False
                 ack = False
+                # Kontrola, ci je komunikacia spravne uzatvorena
                 for com_n in range(len(com)):
                     if com[com_n][1][0] == "1" and not fin:
                         fin = True
@@ -261,6 +352,11 @@ def tcp_communication(frames, tcps, type):
         print("\t\t\t\t\tNo incomplete " + type.upper() + " communication\n\n")
 
 
+"""
+Funkcia na zoskupenie TCP ramcov, ktore maju rovnake ip a mac adresy a ci sa rovnaju typy TCP ramcov
+"""
+
+
 def group_comms(tcp, comms):
     counter = 0
     if comms:
@@ -273,31 +369,6 @@ def group_comms(tcp, comms):
                 return 1
             counter += 1
     return 0
-
-
-"""
-Funkcia na vypis informacii o ramci
-"""
-
-
-def print_frame_info(frame, handler, icmp, tftp, arp, tcps, number, flag):
-    # Vypise zdrojovu naformatovanu mac adresu
-    print("Source mac adress:", get_source_mac(frame))
-    # Vypise koncovu naformatovanu mac adresu
-    print("Destination mac adress:", get_dest_mac(frame))
-    frame_length = len(frame) / 2
-    if frame_length < 60:
-        frame_length = 60
-    # Vypis dlzky ramca
-    print("Frame length by pcap API: " + str(len(frame) / 2) + "\nFrame length distributed by medium: " + str(
-        (frame_length + 4)))
-    # Zavolanie funkcie na zistanie dalsic informacii o ramci
-    ip_adresses = get_frame_type(frame, handler, icmp, tftp, arp, tcps, number, flag)
-    print()
-    # Vypis dat v ramci
-    print_frame(frame)
-    print("\n")
-    return ip_adresses
 
 
 def get_source_mac(smac_frame):
@@ -336,23 +407,21 @@ def format_ip(ip):
 
 
 """
-Funkcia na vypisanie ramca v hexadecimalnom formate
+Funkcia na zistenie velkosti hlavicky
 """
 
 
-def print_frame(frame):
-    count = 0
-    for i in frame:
-        print(i, end='')
-        count += 1
-        if count % 2 == 0:
-            print(" ", end='')
-        if count % 32 == 0:
-            print()
-            continue
-        if count % 16 == 0:
-            print('  ', end='')
-    print()
+def get_header_size(frame):
+    size = int(frame[29], 16) * 4 * 2
+    return size
+
+
+def tftp_source_port(frame, header):
+    return int(frame[header:header + 4], 16)
+
+
+def tftp_dest_port(frame, header):
+    return int(frame[header + 4:header + 8], 16)
 
 
 """
@@ -385,9 +454,33 @@ def get_802_protocol():
     return type802
 
 
+"""
+Funkcia, ktora nacita LLC protokoly do slovnika
+"""
+
+
+def get_LLC_protocol(frame):
+    protocol = get_802_protocol()
+    keys = protocol.keys()
+    for key in keys:
+        if key == frame[28:30]:
+            return protocol[key]
+    return "Unknown protocol"
+
+
 def load_udp_type():
     type = {}
     with open("UDP.txt") as file:
+        lines = file.readlines()
+        for line in lines:
+            temp = line.split("=")
+            type[temp[0]] = temp[1][0:-1]
+    return type
+
+
+def load_TCP_type():
+    type = {}
+    with open("TCP.txt") as file:
         lines = file.readlines()
         for line in lines:
             temp = line.split("=")
@@ -408,16 +501,6 @@ def get_ip_protocol():
             type = line.split("=")
             protocol[type[0]] = type[1][0:-1]
     return protocol
-
-
-def load_TCP_type():
-    type = {}
-    with open("TCP.txt") as file:
-        lines = file.readlines()
-        for line in lines:
-            temp = line.split("=")
-            type[temp[0]] = temp[1][0:-1]
-    return type
 
 
 """
@@ -476,20 +559,6 @@ def get_frame_type(frame, handler, icmp, tftp, arp, tcps, number, flag):
 
 
 """
-Funkcia, ktora nacita LLC protokoly do slovnika
-"""
-
-
-def get_LLC_protocol(frame):
-    protocol = get_802_protocol()
-    keys = protocol.keys()
-    for key in keys:
-        if key == frame[28:30]:
-            return protocol[key]
-    return "Unknown protocol"
-
-
-"""
 Funkcia na zistenie typu ramca, v ktorej sa taktiez zistuje vnoreny protokol a informacie o vnorenom protokole
 """
 
@@ -499,6 +568,7 @@ def get_ether_protocol(frame, type, handler, icmp, tftp, arp, tcps, number, flag
     if type == "Ethernet II":
         dict = get_ethernet_protocol()
         keys = dict.keys()
+        # Zistovanie vnutorneho protokolu
         for key in keys:
             if key == frame[24:28]:
                 print("\t" + dict[key])
@@ -560,40 +630,6 @@ def get_ether_protocol(frame, type, handler, icmp, tftp, arp, tcps, number, flag
                 print("\tProtocol: " + dict[key])
                 break
     return ip_addresses
-
-
-"""
-Funkcia na zistenie velkosti hlavicky
-"""
-
-
-def get_header_size(frame):
-    size = int(frame[29], 16) * 4 * 2
-    return size
-
-
-def tftp_source_port(frame, header):
-    return int(frame[header:header + 4], 16)
-
-
-def tftp_dest_port(frame, header):
-    return int(frame[header + 4:header + 8], 16)
-
-
-def analyze_arp(frame, number):
-    arp_info = []
-    type = int(frame[40:44], 16)
-    if type == 1:
-        type = "request"
-    elif type == 2:
-        type = "reply"
-    source_ip = format_ip(frame[56:64])
-    source_mac = format_mac(frame[44:56])
-    dest_ip = format_ip(frame[76:84])
-    dest_mac = format_mac(frame[64:76])
-    arp_info.extend((number, type, source_ip, dest_ip, source_mac, dest_mac))
-    print(arp_info)
-    return arp_info
 
 
 """

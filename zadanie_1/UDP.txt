@@ -1,7 +1,7 @@
 7=echo
 19=chargen
 37=time
-53=domain
+53=dns
 67=bootps
 68=bootpc
 69=tftp

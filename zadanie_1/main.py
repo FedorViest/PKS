@@ -3,16 +3,27 @@ from scapy.all import rdpcap
 import sys
 
 
+def print_dns(frames, implementation, handler):
+    if len(implementation) == 0:
+        print("No Implementation protocol")
+        return
+    counter = 0
+    print("\t\t\t\t\tPocet vsetkych DNS protokolov: " + str(len(implementation)) + "\n\n")
+    for index in implementation:
+        print("Frame number: " + str(index[0] + 1))
+        print_frame_info(frames[index[0]], handler, icmp, tftp, arp, tcps, index[0], False, implementation)
+        counter += 1
+
 """
 Funkcia na sumarny vypis ramcov
 """
 
 
-def print_all(frames, handler, icmp, tftp, arp, tcps, flag):
+def print_all(frames, handler, icmp, tftp, arp, tcps, flag, implementation):
     ip_adresses = []
     for index in range(len(frames)):
         print("Frame number: %d" % (index + 1))
-        ip_adress = print_frame_info(frames[index], handler, icmp, tftp, arp, tcps, index, flag)
+        ip_adress = print_frame_info(frames[index], handler, icmp, tftp, arp, tcps, index, flag, implementation)
         if ip_adress:
             ip_adresses.append(ip_adress[0])
     if ip_adresses:
@@ -47,7 +58,7 @@ Funkcia na vypis informacii o ramci
 """
 
 
-def print_frame_info(frame, handler, icmp, tftp, arp, tcps, number, flag):
+def print_frame_info(frame, handler, icmp, tftp, arp, tcps, number, flag, implementation):
     # Vypise zdrojovu naformatovanu mac adresu
     print("Source mac adress:", get_source_mac(frame))
     # Vypise koncovu naformatovanu mac adresu
@@ -59,7 +70,7 @@ def print_frame_info(frame, handler, icmp, tftp, arp, tcps, number, flag):
     print("Frame length by pcap API: " + str(len(frame) / 2) + "\nFrame length distributed by medium: " + str(
         (frame_length + 4)))
     # Zavolanie funkcie na zistanie dalsic informacii o ramci
-    ip_adresses = get_frame_type(frame, handler, icmp, tftp, arp, tcps, number, flag)
+    ip_adresses = get_frame_type(frame, handler, icmp, tftp, arp, tcps, number, flag, implementation)
     print()
     # Vypis dat v ramci
     print_frame(frame)
@@ -81,7 +92,7 @@ def print_icmp(frames, icmp):
         if icmp[i] == index:
             if i < 10 or i >= len(icmp) - 10:
                 print("Frame number: %d" % (index + 1))
-                print_frame_info(frames[index], handler, icmp, tftp, arp, tcps, index, False)
+                print_frame_info(frames[index], handler, icmp, tftp, arp, tcps, index, False, implementation)
             i += 1
             if i > len(icmp) - 1:
                 break
@@ -123,7 +134,7 @@ def print_tftp(frames, tftp):
         for frame in communication:
             if counter < 10 and counter >= len(communication) - 10:
                 print("Frame number: %d" % (frame + 1))
-                print_frame_info(frames[frame], handler, icmp, tftp, arp, tcps, index, False)
+                print_frame_info(frames[frame], handler, icmp, tftp, arp, tcps, index, False, implementation)
             counter += 1
 
 
@@ -174,7 +185,7 @@ def print_arp(frames, arps):
                         print("ARP-" + com[counter][1] + "\nSource ip address: " + com[counter][2] + "\tDestination ip address: "\
                         + com[counter][3] + "\nSource mac: " + com[counter][4] + "\tDestination mac: " + com[counter][5])
                         print("Frame number: ", str(com[counter][0] + 1))
-                        print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, tcps, index, False)
+                        print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, tcps, index, False, implementation)
     if incomplete:
         index = 1
         for com in incomplete:
@@ -187,12 +198,12 @@ def print_arp(frames, arps):
                         print("ARP-" + com[counter][1] + "\nSource ip address: " + com[counter][2] + "\tDestination ip address: "\
                         + com[counter][3] + "\nSource mac: " + com[counter][4] + "\tDestination mac: " + com[counter][5])
                         print("Frame number: ", str(com[counter][0] + 1))
-                        print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, tcps, index, False)
+                        print_frame_info(frames[com[counter][0]], handler, icmp, tftp, arp, tcps, index, False, implementation)
             elif com[-1] == "end":
                 print("ARP-" + com[0][1] + "\nSource ip address: " + com[0][2] + "\tDestination ip address: "\
                 + com[0][3] + "\nSource mac: " + com[0][4] + "\tDestination mac: " + com[0][5])
                 print("Frame number: ", str(com[0][0] + 1))
-                print_frame_info(frames[com[0][0]], handler, icmp, tftp, arp, tcps, index, False)
+                print_frame_info(frames[com[0][0]], handler, icmp, tftp, arp, tcps, index, False, implementation)
 
 
 def arp_request(arp, comms):
@@ -331,19 +342,19 @@ def tcp_communication(frames, tcps, type):
                     if counter < 10 or counter >= len(com) - 10:
                         print("Source port: " + str(i[2]) + "\tDestination port: " + str(i[3]))
                         print("Frame number: ", str(int(i[0]) + 1))
-                        print_frame_info(frames[i[0]], handler, icmp, tftp, arp, tcps, index, False)
+                        print_frame_info(frames[i[0]], handler, icmp, tftp, arp, tcps, index, False, implementation)
                     counter += 1
                 printing_complete = False
 
         if printing_incomplete:
             if corr_start and not corr_end:
-                print("\t\t\t\t\tInomplete " + type.upper() + " communication:\n")
+                print("\t\t\t\t\tIncomplete " + type.upper() + " communication:\n")
                 counter = 0
                 for i in com:
                     if counter < 10 or counter >= len(com) - 10:
                         print("Source port: " + str(i[2]) + "\tDestination port: " + str(i[3]))
                         print("Frame number: ", str(int(i[0]) + 1))
-                        print_frame_info(frames[i[0]], handler, icmp, tftp, arp, tcps, index, False)
+                        print_frame_info(frames[i[0]], handler, icmp, tftp, arp, tcps, index, False, implementation)
                     counter += 1
                 printing_incomplete = False
     if printing_complete:
@@ -538,17 +549,17 @@ Funkcia na zistenie typu ramca
 """
 
 
-def get_frame_type(frame, handler, icmp, tftp, arp, tcps, number, flag):
+def get_frame_type(frame, handler, icmp, tftp, arp, tcps, number, flag, implementation):
     size = int(frame[24:28], 16)
     ip_addresses = []
     if size > 1536:
         print("Ethernet II")
-        ip_addresses = get_ether_protocol(frame, "Ethernet II", handler, icmp, tftp, arp, tcps, number, flag)
+        ip_addresses = get_ether_protocol(frame, "Ethernet II", handler, icmp, tftp, arp, tcps, number, flag, implementation)
     else:
         size = frame[28:30]
         if size == "aa":
             print("IEEE 802.3 LLC + SNAP")
-            get_ether_protocol(frame, "SNAP", handler, icmp, tftp, arp, tcps, number, flag)
+            get_ether_protocol(frame, "SNAP", handler, icmp, tftp, arp, tcps, number, flag, implementation)
         # ak je raw, tak je IPX header
         elif size == "ff":
             print("\tIEEE 802.3 RAW" + "\n\t\tProtocol: IPX")
@@ -563,7 +574,7 @@ Funkcia na zistenie typu ramca, v ktorej sa taktiez zistuje vnoreny protokol a i
 """
 
 
-def get_ether_protocol(frame, type, handler, icmp, tftp, arp, tcps, number, flag):
+def get_ether_protocol(frame, type, handler, icmp, tftp, arp, tcps, number, flag, implementation):
     ip_addresses = []
     if type == "Ethernet II":
         dict = get_ethernet_protocol()
@@ -582,7 +593,7 @@ def get_ether_protocol(frame, type, handler, icmp, tftp, arp, tcps, number, flag
                     print("\t\tSource ip address: " + str(
                         source_ip) + "\n\t\tDestination ip address: " + str(dest_ip) + "\n\t\tProtocol: " + protocol)
                     index = get_header_size(frame) + 28
-                    if handler == "icmp" and protocol == "ICMP":
+                    if protocol == "ICMP":
                         icmps = get_icmp_types()
                         icmp_keys = icmps.keys()
                         if flag:
@@ -614,6 +625,11 @@ def get_ether_protocol(frame, type, handler, icmp, tftp, arp, tcps, number, flag
                             comm.extend((number, src_port, dst_port))
                             if flag:
                                 tftp.append(comm)
+                        elif handler == "dns" and udp == "dns":
+                            comm = []
+                            comm.extend((number, src_port, dst_port))
+                            if flag:
+                                implementation.append(comm)
                     elif protocol == "TCP":
                         if handler == "all":
                             handle_tcp(frame, tcps, number, source_ip, dest_ip, True)
@@ -694,10 +710,10 @@ def menu():
     print("\texit - to terminate program\n\n")
 
 
-def load(frames, handler, icmp, tftp, arp, tcps):
+def load(frames, handler, icmp, tftp, arp, tcps, implementation):
     file = open("Output.txt", "w")
     open_file(file, "y")
-    print_all(frames, handler, icmp, tftp, arp, tcps, True)
+    print_all(frames, handler, icmp, tftp, arp, tcps, True, implementation)
     reverse_file("y")
     file.close()
 
@@ -715,6 +731,7 @@ icmp = []
 arp = []
 tcps = []
 tftp = []
+implementation = []
 write = input("[y/n] print to file: ")
 handler = str(input("Pick your option: "))
 while handler != "exit":
@@ -725,12 +742,12 @@ while handler != "exit":
     if handler == "all":
         file = open("Output.txt", "w")
         open_file(file, write)
-        print_all(frames, handler, icmp, tftp, arp, tcps, True)
+        print_all(frames, handler, icmp, tftp, arp, tcps, True, implementation)
         reverse_file(write)
         file.close()
     elif handler == "icmp":
         icmp = []
-        load(frames, handler, icmp, tftp, arp, tcps)
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("ICMP Communication\n\n")
@@ -739,7 +756,7 @@ while handler != "exit":
         file2.close()
     elif handler == "tftp":
         tftp = []
-        load(frames, handler, icmp, tftp, arp, tcps)
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("TFTP Communication\n\n")
@@ -748,7 +765,7 @@ while handler != "exit":
         file2.close()
     elif handler == "arp":
         arp = []
-        load(frames, handler, icmp, tftp, arp, tcps)
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("ARP Communication\n\n")
@@ -757,7 +774,7 @@ while handler != "exit":
         file2.close()
     elif handler == "http":
         tcps = []
-        load(frames, handler, icmp, tftp, arp, tcps)
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("HTTP Communication\n\n")
@@ -766,7 +783,7 @@ while handler != "exit":
         file2.close()
     elif handler == "https":
         tcps = []
-        load(frames, handler, icmp, tftp, arp, tcps)
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("HTTPS Communication\n\n")
@@ -775,7 +792,7 @@ while handler != "exit":
         file2.close()
     elif handler == "ssh":
         tcps = []
-        load(frames, handler, icmp, tftp, arp, tcps)
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("SSH Communication\n\n")
@@ -784,7 +801,7 @@ while handler != "exit":
         file2.close()
     elif handler == "telnet":
         tcps = []
-        load(frames, handler, icmp, tftp, arp, tcps)
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("TELNET Communication\n\n")
@@ -793,7 +810,7 @@ while handler != "exit":
         file2.close()
     elif handler == "ftp-control":
         tcps = []
-        load(frames, handler, icmp, tftp, arp, tcps)
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("FTP-CONTROL Communication\n\n")
@@ -802,11 +819,20 @@ while handler != "exit":
         file2.close()
     elif handler == "ftp-data":
         tcps = []
-        load(frames, handler, icmp, tftp, arp, tcps)
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
         file2 = open("Output.txt", "w")
         open_file(file2, write)
         print("FTP-DATA Communication\n\n")
         tcp_communication(frames, tcps, handler)
+        reverse_file(write)
+        file2.close()
+    elif handler == "dns":
+        implementation = []
+        load(frames, handler, icmp, tftp, arp, tcps, implementation)
+        file2 = open("Output.txt", "w")
+        open_file(file2, write)
+        print("DNS Protocol\n\n")
+        print_dns(frames, implementation, handler)
         reverse_file(write)
         file2.close()
     elif handler == "exit":

@@ -1,8 +1,10 @@
+import random
+import math
 import socket
+import stat
+import os
 import sys
 import threading
-import os
-import math
 import time
 import zlib
 import struct # https://docs.python.org/3/library/struct.html
@@ -55,11 +57,12 @@ def choose_roles():
 
 
 def client_menu():
-    handler = int(input("Select option:"
+    handler = int(input("\nSelect option:"
                         "\n\t[1] -> Send message"
                         "\n\t[2] -> Send file"
                         "\n\t[3] -> Swap roles"
-                        "\n\t[4] -> End connection"
+                        "\n\t[4] -> Keep alive"
+                        "\n\t[5] -> End connection"
                         "\nOption: "))
     return handler
 
@@ -67,17 +70,22 @@ def client_menu():
 def client_connect():
     while True:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        ip = input("Input ip address you want to connect to: ")
-        port = int(input("Select port you want to connect to: "))
-        server_addr = (ip, port)
-        client_socket.sendto(str.encode("0"), server_addr)
-        client_socket.settimeout(60)
-        data, addr = client_socket.recvfrom(1500)
-        if data.decode() == "3":
-            print(f"\n\tSuccessfully connected to address {addr}")
-            return client_socket, server_addr
-        else:
-            continue
+        try:
+            client_socket.settimeout(60)
+            ip = input("Input ip address you want to connect to: ")
+            port = int(input("Select port you want to connect to: "))
+            server_addr = (ip, port)
+            header = create_header(0, 0)
+            client_socket.sendto(header, server_addr)
+            data, addr = client_socket.recvfrom(1500)
+            packet_type, packet_number, crc, recv_data = get_header_data(data)
+            if packet_type == 3:
+                print(f"\n\tSuccessfully connected to address {addr}")
+                return client_socket, server_addr
+            else:
+                continue
+        except socket.timeout:
+            print("Connection Timeout")
 
 
 def client(client_socket, address):
@@ -87,8 +95,15 @@ def client(client_socket, address):
         error = 2
 
         if handler == 1 or handler == 2:
-            frag_size = int(input("Select maximum fragment size: "))
-            error = int(input("Send data with errors?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
+            frag_size = int(input("\nSelect maximum fragment size: "))
+            while frag_size < 1 or frag_size > 1464:
+                print("Incorrect input (please select from range 1 - 1464)")
+                frag_size = int(input("\nSelect maximum fragment size: "))
+
+            error = int(input("\nSend data with errors?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
+            while error != 1 and error != 2:
+                print("Incorrect input")
+                error = int(input("\nSend data with errors?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
 
         if handler == 1:
             message = str(input("Message you want to send: ")).encode()
@@ -104,18 +119,48 @@ def client(client_socket, address):
                 send_message(message, total_packets, 1, frag_size, client_socket, address, error)
 
         elif handler == 2:
-            file_name = str(input("File name you want to send: ")).encode()
+            file_name = str(input("File name you want to send: "))
+            file_size = os.path.getsize(file_name)
+            file_path = os.path.abspath(file_name)
 
-        elif handler == 4:
+            if file_size > 2097152:
+                print("File too big")
+                continue
+            if not file_path:
+                print("Could not find specified file")
+                continue
+
+            print(f"File_size {file_size / 1000000} MB")
+            print(file_path)
+
+            file = open(file_name, "rb")
+            file_read = file.read()
+
+            total_packets = math.ceil(file_size / frag_size)
+
+            file_name = file_name.encode()
+
+            header = create_header(2, total_packets, 0, file_name)
+
+            client_socket.sendto(header, address)
+
+            data, addr = client_socket.recvfrom(1500)
+
+            packet_type, packet_number, crc, recv_data = get_header_data(data)
+
+            if packet_type == 3:
+                send_message(file_read, total_packets, 2, frag_size, client_socket, address, error)
+
+        elif handler == 5:
             header = create_header(7, 0)
             client_socket.sendto(header, address)
             data, addr = client_socket.recvfrom(1500)
             packet_type, packet_number, crc, data = get_header_data(data)
             if packet_type == 3:
-                print("Connection closing")
+                print("\n\tConnection closing...")
                 client_socket.close()
             else:
-                print("Connection closing forcefully")
+                print("\n\tConnection closing forcefully...")
                 client_socket.close()
             break
 
@@ -125,6 +170,17 @@ def client(client_socket, address):
 def send_message(data, total_packets, packet_type, fragment_size, client_socket, dest_address, error):
     packets_sent = 0
     packet_number = 1
+    wrong_packets = []
+    if error == 1:
+        number = int(input("Please select % of incorrect packets [1-99]: "))
+        while number < 1 or number > 100:
+            number = int(input("Please select % of incorrect packets [1-99]: "))
+
+        number = math.ceil(total_packets * (number/100))
+        for i in range(number):
+            wrong_packets.append(random.randrange(0, total_packets))
+        wrong_packets.sort()
+
     while True:
         if packets_sent == total_packets:
             print("All packets transferred successfully")
@@ -132,6 +188,21 @@ def send_message(data, total_packets, packet_type, fragment_size, client_socket,
 
         to_send = data[:fragment_size]
         crc = zlib.crc32(to_send)
+        if len(wrong_packets) >= 1:
+            if packet_type == 1:
+                if packets_sent == wrong_packets[0]:
+                    to_send = list(to_send.decode())
+                    if to_send[0] == "A":
+                        to_send[0] = 'B'
+                    else:
+                        to_send[0] = 'A'
+                    to_send = str(to_send).encode()
+                    wrong_packets.pop(0)
+            elif packet_type == 2:
+                if packets_sent == wrong_packets[0]:
+                    crc += 1
+                    wrong_packets.pop(0)
+
         header = create_header(packet_type, packet_number, crc, to_send)
 
         client_socket.sendto(header, dest_address)
@@ -147,17 +218,23 @@ def send_message(data, total_packets, packet_type, fragment_size, client_socket,
 
 def server_connect():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_socket.settimeout(60)
-    hostname = socket.gethostname()
-    ip = socket.gethostbyname(hostname)
-    print(ip)
-    port = int(input("Select port on which you want to listen on: "))
-    server_socket.bind((ip, port))
-    data, addr = server_socket.recvfrom(1500)
-    if data.decode() == "0":
-        server_socket.sendto(str.encode("3"), addr)
-        print(f"\n\tConnection at address {addr[0]}")
-    return server_socket, addr
+    try:
+        server_socket.settimeout(60)
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
+        print(ip)
+        port = int(input("Select port on which you want to listen on: "))
+        server_socket.bind((ip, port))
+        data, addr = server_socket.recvfrom(1500)
+        packet_type, packet_number, crc, recv_data = get_header_data(data)
+        if packet_type == 0:
+            header = create_header(3, 0)
+            server_socket.sendto(header, addr)
+            print(f"\n\tConnection at address {addr[0]}")
+        return server_socket, addr
+
+    except socket.timeout:
+        print("Connection Timeout")
 
 
 def server(server_socket, address):
@@ -168,26 +245,54 @@ def server(server_socket, address):
         packet_type, total_number, crc, data = get_header_data(data)
 
         if packet_type == 1:
-            print(f"Prepared to receive {total_number} packets")
+            print(f"\nPrepared to receive {total_number} packets")
             header = create_header(3, total_number)
             server_socket.sendto(header, address)
             receive_message(server_socket, address, packet_type, total_number)
+
+        elif packet_type == 2:
+            directory = int(input("\nDo you want to save file in current directory?\n\t[1] -> yes\n\t[2] -> "
+                                  "no\nOption: "))
+            while directory != 1 and directory != 2:
+                print("\nIncorrect input.")
+                directory = int(input("\n\t[1] -> yes\n\t[2] -> no\nOption: "))
+
+            if directory == 2:
+                file_path = input("\nType full path where to save file: ")
+            else:
+                file_name = data.decode()
+                file_dest = input("\nSelect directory where you want to save file: ")
+                file_path = os.path.dirname(os.path.abspath(file_name))
+                file_path = os.path.join(file_path, file_dest)
+                if not os.path.exists(file_path):
+                    os.mkdir(file_path)
+                file_path += "\\" + file_name
+
+            print(file_path)
+            print(f"\nPrepared to receive {total_number} packets")
+
+            header = create_header(3, total_number)
+            server_socket.sendto(header, address)
+
+            receive_message(server_socket, address, packet_type, total_number, file_path)
+
         elif packet_type == 7:
             header = create_header(3, total_number)
             server_socket.sendto(header, address)
-            print("Connection closing...")
+            print("\n\tConnection closing...")
             server_socket.close()
             break
     return 0
 
 
-def receive_message(server_socket, address, packet_type, total_number):
+def receive_message(server_socket, address, packet_type, total_number, file_path=''):
     full = ''
+    full_msg = []
     packets_received = 0
 
     while True:
         if packets_received == total_number:
-            print("All packets received successfully")
+            print("\nAll packets received successfully")
             break
 
         data, addr = server_socket.recvfrom(1500)
@@ -196,7 +301,10 @@ def receive_message(server_socket, address, packet_type, total_number):
 
         if received_crc == crc:
             packets_received += 1
-            full += message.decode()
+            if packet_type == 2:
+                full_msg.append(message)
+            else:
+                full += message.decode()
 
             header = create_header(3, packets_received)
 
@@ -207,7 +315,17 @@ def receive_message(server_socket, address, packet_type, total_number):
             server_socket.sendto(header, address)
             print(f"Packet number {packet_number} | NACK")
 
-    print("Message received:", full)
+    if packet_type == 1:
+        print("\nMessage received:", full)
+    else:
+        os.chmod(file_path, 0o777)
+        file = open(file_path, "wb")
+        os.chmod(file_path, 0o777)
+        for fragment in full_msg:
+            file.write(fragment)
+        os.chmod(file_path, 0o777)
+        file.close()
+
     return
 
 

@@ -47,11 +47,9 @@ def choose_roles():
                          "\n\t[2] -> Server"
                          "\nRole: "))
     if role == CLIENT:
-        client_socket, server_addr = client_connect()
-        client(client_socket, server_addr)
+        client_connect()
     if role == SERVER:
-        server_socket, addr = server_connect()
-        server(server_socket, addr)
+        server_connect()
 
     return None
 
@@ -68,6 +66,7 @@ def client_menu():
 
 
 def client_connect():
+    print("**********************   CLIENT   **********************")
     while True:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
@@ -81,7 +80,7 @@ def client_connect():
             packet_type, packet_number, crc, recv_data = get_header_data(data)
             if packet_type == 3:
                 print(f"\n\tSuccessfully connected to address {addr}")
-                return client_socket, server_addr
+                client(client_socket, server_addr)
             else:
                 continue
         except socket.timeout:
@@ -151,6 +150,16 @@ def client(client_socket, address):
             if packet_type == 3:
                 send_message(file_read, total_packets, 2, frag_size, client_socket, address, error)
 
+        elif handler == 3:
+            header = create_header(6, 0)
+            client_socket.sendto(header, address)
+            data, addr = client_socket.recvfrom(1500)
+            packet_type, packet_number, crc, data = get_header_data(data)
+
+            if packet_type == 3:
+                client_socket.close()
+                swap("client")
+
         elif handler == 5:
             header = create_header(7, 0)
             client_socket.sendto(header, address)
@@ -162,7 +171,7 @@ def client(client_socket, address):
             else:
                 print("\n\tConnection closing forcefully...")
                 client_socket.close()
-            break
+            exit(0)
 
     return 0
 
@@ -217,21 +226,19 @@ def send_message(data, total_packets, packet_type, fragment_size, client_socket,
 
 
 def server_connect():
+    print("**********************   SERVER   **********************")
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         server_socket.settimeout(60)
-        hostname = socket.gethostname()
-        ip = socket.gethostbyname(hostname)
-        print(ip)
         port = int(input("Select port on which you want to listen on: "))
-        server_socket.bind((ip, port))
+        server_socket.bind(("", port))
         data, addr = server_socket.recvfrom(1500)
         packet_type, packet_number, crc, recv_data = get_header_data(data)
         if packet_type == 0:
             header = create_header(3, 0)
             server_socket.sendto(header, addr)
             print(f"\n\tConnection at address {addr[0]}")
-        return server_socket, addr
+        server(server_socket, addr)
 
     except socket.timeout:
         print("Connection Timeout")
@@ -256,19 +263,22 @@ def server(server_socket, address):
             while directory != 1 and directory != 2:
                 print("\nIncorrect input.")
                 directory = int(input("\n\t[1] -> yes\n\t[2] -> no\nOption: "))
-
+            file_name = data.decode()
             if directory == 2:
                 file_path = input("\nType full path where to save file: ")
             else:
-                file_name = data.decode()
+                #file_name = data.decode()
                 file_dest = input("\nSelect directory where you want to save file: ")
                 file_path = os.path.dirname(os.path.abspath(file_name))
                 file_path = os.path.join(file_path, file_dest)
                 if not os.path.exists(file_path):
                     os.mkdir(file_path)
-                file_path += "\\" + file_name
+                file_path = file_path + "\\"
+                file_path += file_name
 
             print(file_path)
+            file_path = file_path + "\\"
+            file_path += file_name
             print(f"\nPrepared to receive {total_number} packets")
 
             header = create_header(3, total_number)
@@ -276,13 +286,19 @@ def server(server_socket, address):
 
             receive_message(server_socket, address, packet_type, total_number, file_path)
 
+        elif packet_type == 6:
+            header = create_header(3, 0)
+            server_socket.sendto(header, address)
+
+            server_socket.close()
+            swap("server")
+
         elif packet_type == 7:
             header = create_header(3, total_number)
             server_socket.sendto(header, address)
             print("\n\tConnection closing...")
             server_socket.close()
-            break
-    return 0
+            exit(0)
 
 
 def receive_message(server_socket, address, packet_type, total_number, file_path=''):
@@ -318,15 +334,23 @@ def receive_message(server_socket, address, packet_type, total_number, file_path
     if packet_type == 1:
         print("\nMessage received:", full)
     else:
-        os.chmod(file_path, 0o777)
+        print(file_path)
         file = open(file_path, "wb")
-        os.chmod(file_path, 0o777)
         for fragment in full_msg:
             file.write(fragment)
-        os.chmod(file_path, 0o777)
         file.close()
 
+        print(f"\nFile received in location {file_path}")
+
     return
+
+
+def swap(socket_type):
+    print("\n\tSwapping roles...\n\n")
+    if socket_type == "client":
+        server_connect()
+    elif socket_type == "server":
+        client_connect()
 
 
 choose_roles()

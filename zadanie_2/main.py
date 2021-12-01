@@ -1,13 +1,12 @@
 import random
 import math
 import socket
-import stat
 import os
 import sys
 import threading
 import time
 import zlib
-import struct # https://docs.python.org/3/library/struct.html
+import struct  # https://docs.python.org/3/library/struct.html
 
 CLIENT = 1  # client option
 SERVER = 2  # server option
@@ -23,8 +22,8 @@ END = 7     # end communication
 
 
 def create_header(packet_type, packet_number=0, crc=0, data=''.encode()):
-    header = struct.pack("B", packet_type) + packet_number.to_bytes(3, byteorder="big") + crc.to_bytes(4, byteorder="big") +\
-            struct.pack(f"{len(data)}s", data)
+    header = struct.pack("B", packet_type) + packet_number.to_bytes(3, byteorder="big") + \
+             crc.to_bytes(4, byteorder="big") + struct.pack(f"{len(data)}s", data)
     return header
 
 
@@ -59,8 +58,7 @@ def client_menu():
                         "\n\t[1] -> Send message"
                         "\n\t[2] -> Send file"
                         "\n\t[3] -> Swap roles"
-                        "\n\t[4] -> Keep alive"
-                        "\n\t[5] -> End connection"
+                        "\n\t[4] -> End connection"
                         "\nOption: "))
     return handler
 
@@ -85,11 +83,19 @@ def client_connect():
                 continue
         except socket.timeout:
             print("Connection Timeout")
+            exit(0)
 
 
 def client(client_socket, address):
+    KPA_event = threading.Event()
+    end_event = threading.Event()
+    thread = threading.Thread(target=keep_alive, args=(client_socket, address, KPA_event, end_event))
+    thread.start()
     while True:
         frag_size = 1464
+
+        KPA_event.set()
+
         handler = client_menu()
         error = 2
 
@@ -105,6 +111,7 @@ def client(client_socket, address):
                 error = int(input("\nSend data with errors?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
 
         if handler == 1:
+            KPA_event.clear()
             message = str(input("Message you want to send: ")).encode()
             total_packets = math.ceil(len(message) / frag_size)
             header = create_header(1, total_packets)
@@ -118,9 +125,14 @@ def client(client_socket, address):
                 send_message(message, total_packets, 1, frag_size, client_socket, address, error)
 
         elif handler == 2:
+            KPA_event.clear()
             file_name = str(input("File name you want to send: "))
-            file_size = os.path.getsize(file_name)
-            file_path = os.path.abspath(file_name)
+            try:
+                file_size = os.path.getsize(file_name)
+                file_path = os.path.abspath(file_name)
+            except FileNotFoundError:
+                print("Selected file not found")
+                continue
 
             if file_size > 2097152:
                 print("File too big")
@@ -134,23 +146,19 @@ def client(client_socket, address):
 
             file = open(file_name, "rb")
             file_read = file.read()
-
             total_packets = math.ceil(file_size / frag_size)
-
             file_name = file_name.encode()
 
             header = create_header(2, total_packets, 0, file_name)
-
             client_socket.sendto(header, address)
-
             data, addr = client_socket.recvfrom(1500)
-
             packet_type, packet_number, crc, recv_data = get_header_data(data)
 
             if packet_type == 3:
                 send_message(file_read, total_packets, 2, frag_size, client_socket, address, error)
 
         elif handler == 3:
+            KPA_event.clear()
             header = create_header(6, 0)
             client_socket.sendto(header, address)
             data, addr = client_socket.recvfrom(1500)
@@ -160,18 +168,10 @@ def client(client_socket, address):
                 client_socket.close()
                 swap("client")
 
-        elif handler == 5:
-            header = create_header(7, 0)
-            client_socket.sendto(header, address)
-            data, addr = client_socket.recvfrom(1500)
-            packet_type, packet_number, crc, data = get_header_data(data)
-            if packet_type == 3:
-                print("\n\tConnection closing...")
-                client_socket.close()
-            else:
-                print("\n\tConnection closing forcefully...")
-                client_socket.close()
-            exit(0)
+        elif handler == 4:
+            KPA_event.clear()
+            end_event.set()
+            end_connection(client_socket, address, thread)
 
     return 0
 
@@ -242,62 +242,74 @@ def server_connect():
 
     except socket.timeout:
         print("Connection Timeout")
+        exit(0)
 
 
 def server(server_socket, address):
     while True:
+        try:
+            server_socket.settimeout(60)
 
-        data, addr = server_socket.recvfrom(1500)
+            data, addr = server_socket.recvfrom(1500)
 
-        packet_type, total_number, crc, data = get_header_data(data)
+            packet_type, total_number, crc, data = get_header_data(data)
 
-        if packet_type == 1:
-            print(f"\nPrepared to receive {total_number} packets")
-            header = create_header(3, total_number)
-            server_socket.sendto(header, address)
-            receive_message(server_socket, address, packet_type, total_number)
+            if packet_type == 1:
+                print(f"\nPrepared to receive {total_number} packets")
+                header = create_header(3, total_number)
+                server_socket.sendto(header, address)
+                receive_message(server_socket, address, packet_type, total_number)
 
-        elif packet_type == 2:
-            directory = int(input("\nDo you want to save file in current directory?\n\t[1] -> yes\n\t[2] -> "
-                                  "no\nOption: "))
-            while directory != 1 and directory != 2:
-                print("\nIncorrect input.")
-                directory = int(input("\n\t[1] -> yes\n\t[2] -> no\nOption: "))
-            file_name = data.decode()
-            if directory == 2:
-                file_path = input("\nType full path where to save file: ")
-            else:
-                #file_name = data.decode()
-                file_dest = input("\nSelect directory where you want to save file: ")
-                file_path = os.path.dirname(os.path.abspath(file_name))
-                file_path = os.path.join(file_path, file_dest)
-                if not os.path.exists(file_path):
-                    os.mkdir(file_path)
+            elif packet_type == 2:
+                directory = int(input("\nDo you want to save file in current directory?\n\t[1] -> yes\n\t[2] -> "
+                                      "no\nOption: "))
+                while directory != 1 and directory != 2:
+                    print("\nIncorrect input.")
+                    directory = int(input("\n\t[1] -> yes\n\t[2] -> no\nOption: "))
+                file_name = data.decode()
+                if directory == 2:
+                    file_path = input("\nType full path where to save file: ")
+                else:
+                    file_dest = input("\nSelect directory where you want to save file: ")
+                    file_path = os.path.dirname(os.path.abspath(file_name))
+                    file_path = os.path.join(file_path, file_dest)
+                    if not os.path.exists(file_path):
+                        os.mkdir(file_path)
+                    # file_path = file_path + "\\"
+                    # file_path += file_name
+
+                print(file_path)
                 file_path = file_path + "\\"
                 file_path += file_name
+                print(f"\nPrepared to receive {total_number} packets")
 
-            print(file_path)
-            file_path = file_path + "\\"
-            file_path += file_name
-            print(f"\nPrepared to receive {total_number} packets")
+                header = create_header(3, total_number)
+                server_socket.sendto(header, address)
 
-            header = create_header(3, total_number)
-            server_socket.sendto(header, address)
+                receive_message(server_socket, address, packet_type, total_number, file_path)
 
-            receive_message(server_socket, address, packet_type, total_number, file_path)
+            elif packet_type == 5:
+                header = create_header(3, 0)
+                sys.stdout.write("\rKeep Alive counter: %d" % total_number)
+                server_socket.sendto(header, address)
 
-        elif packet_type == 6:
-            header = create_header(3, 0)
-            server_socket.sendto(header, address)
+            elif packet_type == 6:
+                header = create_header(3, 0)
+                server_socket.sendto(header, address)
 
+                server_socket.close()
+                swap("server")
+
+            elif packet_type == 7:
+                header = create_header(3, total_number)
+                server_socket.sendto(header, address)
+                print("\n\tConnection closing...")
+                server_socket.close()
+                exit(0)
+
+        except socket.timeout:
             server_socket.close()
-            swap("server")
-
-        elif packet_type == 7:
-            header = create_header(3, total_number)
-            server_socket.sendto(header, address)
-            print("\n\tConnection closing...")
-            server_socket.close()
+            print("\nConnection timeout.")
             exit(0)
 
 
@@ -351,6 +363,43 @@ def swap(socket_type):
         server_connect()
     elif socket_type == "server":
         client_connect()
+
+
+def keep_alive(s, address, event, end_event):
+    counter = 1
+    while not end_event.is_set():
+        if event.is_set():
+            header = create_header(5, counter)
+            s.sendto(header, address)
+            data, addr = s.recvfrom(1500)
+            packet_type, packet_number, crc, recv_data = get_header_data(data)
+
+            if packet_type != 3:
+                break
+            counter += 1
+            time.sleep(5)
+        else:
+            counter = 1
+    return 0
+
+
+def end_connection(client_socket, address, thread):
+    try:
+        client_socket.settimeout(2)
+        header = create_header(7, 0)
+        client_socket.sendto(header, address)
+        data, addr = client_socket.recvfrom(1500)
+        packet_type, packet_number, crc, data = get_header_data(data)
+        if packet_type == 3:
+            print("\n\tConnection closing...")
+            client_socket.close()
+        else:
+            print("\n\tConnection closing forcefully...")
+            client_socket.close()
+        thread.join()
+        exit(0)
+    except socket.timeout:
+        print("\n\tConnection closing...")
 
 
 choose_roles()

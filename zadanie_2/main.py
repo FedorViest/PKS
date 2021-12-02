@@ -92,86 +92,103 @@ def client(client_socket, address):
     thread = threading.Thread(target=keep_alive, args=(client_socket, address, KPA_event, end_event))
     thread.start()
     while True:
-        frag_size = 1464
+        try:
+            frag_size = 1464
 
-        KPA_event.set()
+            client_socket.settimeout(20)
 
-        handler = client_menu()
-        error = 2
+            KPA_event.set()
 
-        if handler == 1 or handler == 2:
-            frag_size = int(input("\nSelect maximum fragment size: "))
-            while frag_size < 1 or frag_size > 1464:
-                print("Incorrect input (please select from range 1 - 1464)")
+            handler = client_menu()
+            error = 2
+
+            if handler == 1 or handler == 2:
                 frag_size = int(input("\nSelect maximum fragment size: "))
+                while frag_size < 1 or frag_size > 1464:
+                    print("Incorrect input (please select from range 1 - 1464)")
+                    frag_size = int(input("\nSelect maximum fragment size: "))
 
-            error = int(input("\nSend data with errors?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
-            while error != 1 and error != 2:
-                print("Incorrect input")
                 error = int(input("\nSend data with errors?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
+                while error != 1 and error != 2:
+                    print("Incorrect input")
+                    error = int(input("\nSend data with errors?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
 
-        if handler == 1:
-            KPA_event.clear()
-            message = str(input("Message you want to send: ")).encode()
-            total_packets = math.ceil(len(message) / frag_size)
-            header = create_header(1, total_packets)
-            client_socket.sendto(header, address)
+            if handler == 1:
+                KPA_event.clear()
+                message = str(input("Message you want to send: ")).encode()
+                total_packets = math.ceil(len(message) / frag_size)
+                header = create_header(1, total_packets)
+                client_socket.sendto(header, address)
 
-            data, addr = client_socket.recvfrom(1500)
+                data, addr = client_socket.recvfrom(1500)
 
-            packet_type, packet_number, crc, received_data = get_header_data(data)
+                packet_type, packet_number, crc, received_data = get_header_data(data)
 
-            if packet_type == 3:
-                send_message(message, total_packets, 1, frag_size, client_socket, address, error)
+                if packet_type == 3:
+                    send_message(message, total_packets, 1, frag_size, client_socket, address, error)
 
-        elif handler == 2:
-            KPA_event.clear()
-            file_name = str(input("File name you want to send: "))
-            try:
-                file_size = os.path.getsize(file_name)
-                file_path = os.path.abspath(file_name)
-            except FileNotFoundError:
-                print("Selected file not found")
-                continue
+            elif handler == 2:
+                KPA_event.clear()
+                file_name = str(input("File name you want to send: "))
+                project_dir = int(input("File from working directory?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
+                temp = ""
+                try:
+                    if project_dir == 1:
+                        file_size = os.path.getsize(file_name)
+                        file_path = os.path.abspath(file_name)
+                    elif project_dir == 2:
+                        select_path = str(input("Select file path: "))
+                        file_size = os.path.getsize(select_path + file_name)
+                        file_path = os.path.abspath(select_path + file_name)
+                        temp = file_name
+                        file_name = file_path
+                except FileNotFoundError:
+                    print("Selected file not found")
+                    continue
 
-            if file_size > 2097152:
-                print("File too big")
-                continue
-            if not file_path:
-                print("Could not find specified file")
-                continue
+                if file_size > 2097152:
+                    print("File too big")
+                    continue
+                if not file_path:
+                    print("Could not find specified file")
+                    continue
 
-            print(f"File_size {file_size / 1000000} MB")
-            print(file_path)
+                print(f"File_size {file_size / 1000000} MB")
+                print(file_path)
 
-            file = open(file_name, "rb")
-            file_read = file.read()
-            total_packets = math.ceil(file_size / frag_size)
-            file_name = file_name.encode()
+                file = open(file_name, "rb")
+                file_read = file.read()
+                total_packets = math.ceil(file_size / frag_size)
+                if project_dir == 2:
+                    file_name = temp
+                file_name = file_name.encode()
 
-            header = create_header(2, total_packets, 0, file_name)
-            client_socket.sendto(header, address)
-            data, addr = client_socket.recvfrom(1500)
-            packet_type, packet_number, crc, recv_data = get_header_data(data)
+                header = create_header(2, total_packets, 0, file_name)
+                client_socket.sendto(header, address)
+                data, addr = client_socket.recvfrom(1500)
+                packet_type, packet_number, crc, recv_data = get_header_data(data)
 
-            if packet_type == 3:
-                send_message(file_read, total_packets, 2, frag_size, client_socket, address, error)
+                if packet_type == 3:
+                    send_message(file_read, total_packets, 2, frag_size, client_socket, address, error)
 
-        elif handler == 3:
-            KPA_event.clear()
-            header = create_header(6, 0)
-            client_socket.sendto(header, address)
-            data, addr = client_socket.recvfrom(1500)
-            packet_type, packet_number, crc, data = get_header_data(data)
+            elif handler == 3:
+                KPA_event.clear()
+                header = create_header(6, 0)
+                client_socket.sendto(header, address)
+                data, addr = client_socket.recvfrom(1500)
+                packet_type, packet_number, crc, data = get_header_data(data)
 
-            if packet_type == 3:
-                client_socket.close()
-                swap("client")
+                if packet_type == 3:
+                    client_socket.close()
+                    swap("client")
 
-        elif handler == 4:
-            KPA_event.clear()
-            end_event.set()
-            end_connection(client_socket, address, thread)
+            elif handler == 4:
+                KPA_event.clear()
+                end_event.set()
+                end_connection(client_socket, address, thread)
+
+        except socket.timeout:
+            print("Connection timeout.")
 
     return 0
 
@@ -196,20 +213,17 @@ def send_message(data, total_packets, packet_type, fragment_size, client_socket,
             return
 
         to_send = data[:fragment_size]
+        length = len(to_send)
         crc = zlib.crc32(to_send)
         if len(wrong_packets) >= 1:
-            if packet_type == 1:
+            if packet_type == 1 or packet_type == 2:
                 if packets_sent == wrong_packets[0]:
-                    to_send = list(to_send.decode())
-                    if to_send[0] == "A":
-                        to_send[0] = 'B'
+                    if to_send[0] == b"A":
+                        to_send += b'B'
                     else:
-                        to_send[0] = 'A'
-                    to_send = str(to_send).encode()
-                    wrong_packets.pop(0)
-            elif packet_type == 2:
-                if packets_sent == wrong_packets[0]:
-                    crc += 1
+                        to_send += b'A'
+                    to_send = to_send[::-1]
+                    to_send = to_send[:length]
                     wrong_packets.pop(0)
 
         header = create_header(packet_type, packet_number, crc, to_send)
@@ -248,7 +262,7 @@ def server_connect():
 def server(server_socket, address):
     while True:
         try:
-            server_socket.settimeout(60)
+            server_socket.settimeout(20)
 
             data, addr = server_socket.recvfrom(1500)
 
@@ -275,8 +289,6 @@ def server(server_socket, address):
                     file_path = os.path.join(file_path, file_dest)
                     if not os.path.exists(file_path):
                         os.mkdir(file_path)
-                    # file_path = file_path + "\\"
-                    # file_path += file_name
 
                 print(file_path)
                 file_path = file_path + "\\"
@@ -337,16 +349,15 @@ def receive_message(server_socket, address, packet_type, total_number, file_path
             header = create_header(3, packets_received)
 
             server_socket.sendto(header, address)
-            print(f"Packet number {packet_number} | ACK")
+            print(f"Packet number {packet_number} | ACK | Size of data {len(message)}")
         else:
             header = create_header(4, packets_received)
             server_socket.sendto(header, address)
-            print(f"Packet number {packet_number} | NACK")
+            print(f"Packet number {packet_number} | NACK | Size of data {len(message)}")
 
     if packet_type == 1:
         print("\nMessage received:", full)
     else:
-        print(file_path)
         file = open(file_path, "wb")
         for fragment in full_msg:
             file.write(fragment)

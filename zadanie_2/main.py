@@ -21,10 +21,20 @@ SWAP = 6    # change roles
 END = 7     # end communication
 
 
+"""
+Funkcia na vytvorenie hlavicky
+"""
+
+
 def create_header(packet_type, packet_number=0, crc=0, data=''.encode()):
     header = struct.pack("B", packet_type) + packet_number.to_bytes(3, byteorder="big") + \
              crc.to_bytes(4, byteorder="big") + struct.pack(f"{len(data)}s", data)
     return header
+
+
+"""
+Funkcia na desifrovanie dat z hlavicky, funkcia vracia typ spravy, cislo packetu, crc a data
+"""
 
 
 def get_header_data(data):
@@ -72,11 +82,11 @@ def client_connect():
             ip = input("Input ip address you want to connect to: ")
             port = int(input("Select port you want to connect to: "))
             server_addr = (ip, port)
-            header = create_header(0, 0)
-            client_socket.sendto(header, server_addr)
+            header = create_header(0, 0)        # Vytvorenie hlavicky na zacatie komunikacie
+            client_socket.sendto(header, server_addr)   # Poslanie spravy na inicializaciu komunikacie
             data, addr = client_socket.recvfrom(1500)
             packet_type, packet_number, crc, recv_data = get_header_data(data)
-            if packet_type == 3:
+            if packet_type == 3:    # Ak prisiel zo servra ACK
                 print(f"\n\tSuccessfully connected to address {addr}")
                 client(client_socket, server_addr)
             else:
@@ -89,6 +99,7 @@ def client_connect():
 def client(client_socket, address):
     KPA_event = threading.Event()
     end_event = threading.Event()
+    # Vytvorenie threadu na keep alive spolu s events, ktore mi hovoria, kedy sa ma keep alive vypnut
     thread = threading.Thread(target=keep_alive, args=(client_socket, address, KPA_event, end_event))
     thread.start()
     while True:
@@ -102,6 +113,7 @@ def client(client_socket, address):
             handler = client_menu()
             error = 2
 
+            # Ak si pouzivatel vybral MESSAGE alebo FILE, vypyta si od neho dalsie specifikacie
             if handler == 1 or handler == 2:
                 frag_size = int(input("\nSelect maximum fragment size: "))
                 while frag_size < 1 or frag_size > 1464:
@@ -113,6 +125,7 @@ def client(client_socket, address):
                     print("Incorrect input")
                     error = int(input("\nSend data with errors?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
 
+            # Pouzivatel chce poslat spravu
             if handler == 1:
                 KPA_event.clear()
                 message = str(input("Message you want to send: ")).encode()
@@ -127,12 +140,14 @@ def client(client_socket, address):
                 if packet_type == 3:
                     send_message(message, total_packets, 1, frag_size, client_socket, address, error)
 
+            # Pouzivatel chce poslat subor
             elif handler == 2:
                 KPA_event.clear()
                 file_name = str(input("File name you want to send: "))
                 project_dir = int(input("File from working directory?\n\t[1] -> yes\n\t[2] -> no\nOption: "))
                 temp = ""
                 try:
+                    file_size, file_path = 0, ''
                     if project_dir == 1:
                         file_size = os.path.getsize(file_name)
                         file_path = os.path.abspath(file_name)
@@ -171,6 +186,7 @@ def client(client_socket, address):
                 if packet_type == 3:
                     send_message(file_read, total_packets, 2, frag_size, client_socket, address, error)
 
+            # Pouzivatel chce vymenit role
             elif handler == 3:
                 KPA_event.clear()
                 header = create_header(6, 0)
@@ -182,6 +198,7 @@ def client(client_socket, address):
                     client_socket.close()
                     swap("client")
 
+            # Pouzivatel chce ukoncit spojenie
             elif handler == 4:
                 KPA_event.clear()
                 end_event.set()
@@ -193,10 +210,16 @@ def client(client_socket, address):
     return 0
 
 
+"""
+Funkcia na poslanie spravy so vsetkymi potrebnymi parametrami
+"""
+
+
 def send_message(data, total_packets, packet_type, fragment_size, client_socket, dest_address, error):
     packets_sent = 0
     packet_number = 1
     wrong_packets = []
+    # Vygenerovanie chybnych packetov
     if error == 1:
         number = int(input("Please select % of incorrect packets [1-99]: "))
         while number < 1 or number > 100:
@@ -208,6 +231,7 @@ def send_message(data, total_packets, packet_type, fragment_size, client_socket,
         wrong_packets.sort()
 
     while True:
+        # Ukoncovacia podmienka
         if packets_sent == total_packets:
             print("All packets transferred successfully")
             return
@@ -215,6 +239,8 @@ def send_message(data, total_packets, packet_type, fragment_size, client_socket,
         to_send = data[:fragment_size]
         length = len(to_send)
         crc = zlib.crc32(to_send)
+
+        # Generovanie chyby zmenou dat
         if len(wrong_packets) >= 1:
             if packet_type == 1 or packet_type == 2:
                 if packets_sent == wrong_packets[0]:
@@ -233,10 +259,16 @@ def send_message(data, total_packets, packet_type, fragment_size, client_socket,
         new_type, addr = client_socket.recvfrom(1500)
         received_type, received_number, received_crc, received_data = get_header_data(new_type)
 
+        # Ak prisiel ack
         if received_type == 3:
             packet_number += 1
             packets_sent += 1
             data = data[fragment_size:]
+
+
+"""
+Funkcia na pripojenie servra
+"""
 
 
 def server_connect():
@@ -268,12 +300,14 @@ def server(server_socket, address):
 
             packet_type, total_number, crc, data = get_header_data(data)
 
+            # Ak prisla sprava, ze klient chce poslat MESSAGE
             if packet_type == 1:
                 print(f"\nPrepared to receive {total_number} packets")
                 header = create_header(3, total_number)
                 server_socket.sendto(header, address)
                 receive_message(server_socket, address, packet_type, total_number)
 
+            # Ak prisla sprava, ze klient chce poslat FILE
             elif packet_type == 2:
                 directory = int(input("\nDo you want to save file in current directory?\n\t[1] -> yes\n\t[2] -> "
                                       "no\nOption: "))
@@ -300,11 +334,13 @@ def server(server_socket, address):
 
                 receive_message(server_socket, address, packet_type, total_number, file_path)
 
+            # Ak prisla sprava, ze sa ma zacat keep alive
             elif packet_type == 5:
                 header = create_header(3, 0)
                 sys.stdout.write("\rKeep Alive counter: %d" % total_number)
                 server_socket.sendto(header, address)
 
+            # Ak prisla sprava, ze klient chce vymenit role
             elif packet_type == 6:
                 header = create_header(3, 0)
                 server_socket.sendto(header, address)
@@ -312,6 +348,7 @@ def server(server_socket, address):
                 server_socket.close()
                 swap("server")
 
+            # Ak prisla sprava, ze klient chce ukoncit spojenie
             elif packet_type == 7:
                 header = create_header(3, total_number)
                 server_socket.sendto(header, address)
@@ -325,12 +362,18 @@ def server(server_socket, address):
             exit(0)
 
 
+"""
+Funkcia na prijatie spravy/suboru od klienta
+"""
+
+
 def receive_message(server_socket, address, packet_type, total_number, file_path=''):
     full = ''
     full_msg = []
     packets_received = 0
 
     while True:
+        # Koncova podmienka
         if packets_received == total_number:
             print("\nAll packets received successfully")
             break
@@ -339,6 +382,7 @@ def receive_message(server_socket, address, packet_type, total_number, file_path
         packet_type, packet_number, crc, message = get_header_data(data)
         received_crc = zlib.crc32(message)
 
+        # Kontrola, ci data prisli v poriadku
         if received_crc == crc:
             packets_received += 1
             if packet_type == 2:
@@ -355,8 +399,10 @@ def receive_message(server_socket, address, packet_type, total_number, file_path
             server_socket.sendto(header, address)
             print(f"Packet number {packet_number} | NACK | Size of data {len(message)}")
 
+    # V pripade ze server obdrzal spravu tak ju vypise
     if packet_type == 1:
         print("\nMessage received:", full)
+    # V pripade, ze obdrzal subor vypise absolutnu cestu k tomuto suboru
     else:
         file = open(file_path, "wb")
         for fragment in full_msg:
@@ -368,12 +414,22 @@ def receive_message(server_socket, address, packet_type, total_number, file_path
     return
 
 
+"""
+Funkcia na vymenu roli
+"""
+
+
 def swap(socket_type):
     print("\n\tSwapping roles...\n\n")
     if socket_type == "client":
         server_connect()
     elif socket_type == "server":
         client_connect()
+
+
+"""
+Funkcia na udrzanie KEEP ALIVE spojenia
+"""
 
 
 def keep_alive(s, address, event, end_event):
@@ -392,6 +448,11 @@ def keep_alive(s, address, event, end_event):
         else:
             counter = 1
     return 0
+
+
+"""
+Funkcia na ukoncenie spojenia
+"""
 
 
 def end_connection(client_socket, address, thread):

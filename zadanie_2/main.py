@@ -195,6 +195,8 @@ def client(client_socket, address):
                 packet_type, packet_number, crc, data = get_header_data(data)
 
                 if packet_type == 3:
+                    end_event.set()
+                    thread.join()
                     client_socket.close()
                     swap("client")
 
